@@ -1,75 +1,74 @@
-function doPost(e) {
-    var sheetName = e.parameter.branch + "_" + e.parameter.section;
-    var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(sheetName);
-    
-    if (!sheet) return ContentService.createTextOutput("Sheet Not Found").setMimeType(ContentService.MimeType.TEXT);
-    
-    sheet.appendRow([new Date(), e.parameter.name, e.parameter.roll, e.parameter.status]);
-    return ContentService.createTextOutput("Success").setMimeType(ContentService.MimeType.TEXT);
-  }
-  
+// script.js
 
-  document.getElementById("attendanceForm").addEventListener("submit", function(e) {
-    e.preventDefault();
-    
-    let formData = {
-        branch: document.getElementById("branch").value,
-        section: document.getElementById("section").value,
-        name: document.getElementById("name").value,
-        roll: document.getElementById("roll").value,
-        status: document.getElementById("status").value
-    };
+// Simple login check with localStorage
+function login() {
+    const username = document.getElementById("username").value;
+    const password = document.getElementById("password").value;
 
-    fetch("YOUR_GOOGLE_APPS_SCRIPT_URL", {
-        method: "POST",
-        body: new URLSearchParams(formData)
-    })
-    .then(response => response.text())
-    .then(data => {
-        document.getElementById("message").innerText = data === "Success" ? "Attendance Recorded!" : "Error!";
-    })
-    .catch(error => console.error("Error:", error));
-});
+    // Hardcoded credentials for simplicity
+    const validUsername = "admin";
+    const validPassword = "admin123";
 
-//  Attendance excel sheet ------------------------
-
-
-document.addEventListener("DOMContentLoaded", function () {
-    const branchSelect = document.getElementById("branch");
-    const sectionSelect = document.getElementById("section");
-    const rollSelect = document.getElementById("roll");
-
-    async function fetchRollNumbers(branch, section) {
-        const sheetID = "https://docs.google.com/spreadsheets/d/1gbjd9DgU19w4IKm5kiI8MmhEl8E0zWUC/edit?usp=sharing&ouid=103564657463461977015&rtpof=true&sd=true"; // Replace with your Google Sheet ID
-        const sheetName = "Sheet1"; // Change if needed
-        const apiUrl = `https://docs.google.com/spreadsheets/d/${sheetID}/gviz/tq?tqx=out:json&tq&sheet=${sheetName}`;
-
-        try {
-            const response = await fetch(apiUrl);
-            const text = await response.text();
-            const json = JSON.parse(text.substring(70, text.length - 2));
-
-            rollSelect.innerHTML = ""; // Clear previous options
-            json.table.rows.forEach(row => {
-                let [rollNum, branchCol, sectionCol] = row.c.map(cell => cell?.v);
-                if (branchCol === branch && sectionCol === section) {
-                    let option = document.createElement("option");
-                    option.value = rollNum;
-                    option.textContent = rollNum;
-                    rollSelect.appendChild(option);
-                }
-            });
-        } catch (error) {
-            console.error("Error fetching data:", error);
-        }
+    if (username === validUsername && password === validPassword) {
+        localStorage.setItem("isLoggedIn", "true");
+        document.getElementById("login-section").style.display = "none";
+        document.getElementById("dashboard").style.display = "block";
+    } else {
+        document.getElementById("error-message").style.display = "block";
     }
+}
 
-    branchSelect.addEventListener("change", () => {
-        fetchRollNumbers(branchSelect.value, sectionSelect.value);
-    });
-
-    sectionSelect.addEventListener("change", () => {
-        fetchRollNumbers(branchSelect.value, sectionSelect.value);
-    });
+// Check login status when page reloads
+document.addEventListener("DOMContentLoaded", function() {
+    if (localStorage.getItem("isLoggedIn") === "true") {
+        document.getElementById("login-section").style.display = "none";
+        document.getElementById("dashboard").style.display = "block";
+    }
 });
 
+// Logout function
+function logout() {
+    localStorage.removeItem("isLoggedIn");
+    document.getElementById("login-section").style.display = "block";
+    document.getElementById("dashboard").style.display = "none";
+}
+
+// Functions to show forms
+function showAddSection() {
+    document.getElementById("section-form").style.display = "block";
+    document.getElementById("student-form").style.display = "none";
+    document.getElementById("attendance-form").style.display = "none";
+}
+
+function showRegisterStudent() {
+    document.getElementById("student-form").style.display = "block";
+    document.getElementById("section-form").style.display = "none";
+    document.getElementById("attendance-form").style.display = "none";
+}
+
+function showMarkAttendance() {
+    document.getElementById("attendance-form").style.display = "block";
+    document.getElementById("section-form").style.display = "none";
+    document.getElementById("student-form").style.display = "none";
+}
+
+// Dummy function to add section
+function addSection() {
+    const sectionName = document.getElementById("sectionName").value;
+    alert(`Section "${sectionName}" added successfully!`);
+}
+
+// Dummy function to register student
+function registerStudent() {
+    const studentName = document.getElementById("studentName").value;
+    const rollNumber = document.getElementById("rollNumber").value;
+    alert(`Student "${studentName}" with Roll Number "${rollNumber}" registered successfully!`);
+}
+
+// Dummy function to mark attendance
+function markAttendance() {
+    const studentName = document.getElementById("attName").value;
+    const rollNumber = document.getElementById("attRoll").value;
+    const status = document.getElementById("attStatus").value;
+    alert(`Attendance for ${studentName} (Roll No: ${rollNumber}) marked as ${status}`);
+}
