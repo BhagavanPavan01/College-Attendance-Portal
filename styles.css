@@ -1,67 +1,139 @@
-/* styles.css */
-
-/* General Styles */
+/* Base Styles */
 body {
-    font-family: 'Arial', sans-serif;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    transition: background-color 0.3s, color 0.3s;
+    min-height: 100vh;
 }
 
-.container {
-    margin-top: 50px;
+/* Light Mode */
+.light-mode {
+    background-color: #f8f9fa;
+    color: #212529;
 }
 
-h3 {
-    text-align: center;
+.light-mode .card, .light-mode .modal-content {
+    background-color: #ffffff;
+    border-color: #dee2e6;
 }
 
-input[type="text"], input[type="password"], select {
+/* Dark Mode */
+.dark-mode {
+    background-color: #212529;
+    color: #f8f9fa;
+}
+
+.dark-mode .card, .dark-mode .modal-content {
+    background-color: #343a40;
+    border-color: #495057;
+    color: #f8f9fa;
+}
+
+.dark-mode .table {
+    color: #f8f9fa;
+}
+
+.dark-mode .form-control, .dark-mode .form-select {
+    background-color: #495057;
+    border-color: #6c757d;
+    color: #f8f9fa;
+}
+
+.dark-mode .form-control:focus, .dark-mode .form-select:focus {
+    background-color: #495057;
+    color: #f8f9fa;
+    border-color: #6c757d;
+    box-shadow: 0 0 0 0.25rem rgba(108, 117, 125, 0.25);
+}
+
+.dark-mode .text-muted {
+    color: #adb5bd !important;
+}
+
+/* Attendance Table */
+.attendance-table {
     width: 100%;
-    padding: 10px;
-    margin: 10px 0;
-    border-radius: 5px;
+    overflow-x: auto;
 }
 
-button {
-    width: 100%;
-    padding: 10px;
-    border-radius: 5px;
-    font-size: 16px;
+.attendance-table table {
+    min-width: 600px;
 }
 
-button:hover {
-    opacity: 0.8;
+.status-btn {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
 }
 
-/* Success Button */
-.btn-success {
+.status-btn:hover {
+    transform: scale(1.1);
+}
+
+.present {
     background-color: #28a745;
     color: white;
 }
 
-/* Primary Button */
-.btn-primary {
-    background-color: #007bff;
-    color: white;
-}
-
-/* Danger Button */
-.btn-danger {
+.absent {
     background-color: #dc3545;
     color: white;
 }
 
-/* Info Button */
-.btn-info {
-    background-color: #17a2b8;
-    color: white;
+/* Admin Dashboard */
+.admin-card {
+    transition: transform 0.3s, box-shadow 0.3s;
 }
 
-/* Warning Button */
-.btn-warning {
-    background-color: #ffc107;
-    color: white;
+.admin-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
 }
 
-/* Error Message */
-#error-message {
-    text-align: center;
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .jumbotron {
+        padding: 2rem 1rem;
+    }
+    
+    .jumbotron h1 {
+        font-size: 2rem;
+    }
+    
+    .attendance-table {
+        font-size: 0.9rem;
+    }
+    
+    .status-btn {
+        width: 25px;
+        height: 25px;
+        font-size: 0.8rem;
+    }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+.dark-mode ::-webkit-scrollbar-track {
+    background: #343a40;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #555;
 }
