@@ -14,20 +14,75 @@ const loginForm = document.getElementById('loginForm');
 const addStudentForm = document.getElementById('addStudentForm');
 const selectDateForm = document.getElementById('selectDateForm');
 const mainContent = document.getElementById('mainContent');
+const dynamicModalContainer = document.getElementById('dynamicModalContainer');
 
 // Initialize the app
 document.addEventListener('DOMContentLoaded', function() {
+    // Set default date for attendance date picker to today
+    document.getElementById('attendanceDate')?.setAttribute('value', new Date().toISOString().split('T')[0]);
+    
     checkRememberedUser();
     renderMainContent();
     setupEventListeners();
+    
+    // Initialize tooltips
+    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
 });
 
 // Event Listeners
 function setupEventListeners() {
     themeToggle.addEventListener('click', toggleTheme);
-    loginForm.addEventListener('submit', handleLogin);
-    addStudentForm.addEventListener('submit', handleAddStudent);
-    selectDateForm.addEventListener('submit', handleSelectDate);
+    if (loginForm) loginForm.addEventListener('submit', handleLogin);
+    if (addStudentForm) addStudentForm.addEventListener('submit', handleAddStudent);
+    if (selectDateForm) selectDateForm.addEventListener('submit', handleSelectDate);
+    
+    // Dynamic event listeners for elements that might be added later
+    document.addEventListener('click', function(e) {
+        // Delete student
+        if (e.target.closest('.delete-student')) {
+            const button = e.target.closest('.delete-student');
+            const studentId = button.getAttribute('data-id');
+            deleteStudent(studentId);
+        }
+        
+        // View attendance details
+        if (e.target.closest('.view-attendance')) {
+            const button = e.target.closest('.view-attendance');
+            const recordId = button.getAttribute('data-id');
+            viewAttendanceDetails(recordId);
+        }
+        
+        // Download attendance
+        if (e.target.closest('.download-attendance')) {
+            const button = e.target.closest('.download-attendance');
+            const recordId = button.getAttribute('data-id');
+            downloadAttendance(recordId);
+        }
+        
+        // Status buttons in attendance taking
+        if (e.target.closest('.status-btn')) {
+            const button = e.target.closest('.status-btn');
+            toggleAttendanceStatus(button);
+        }
+        
+        // Back to dashboard button
+        if (e.target.closest('#backToDashboard')) {
+            confirmLeaveAttendance();
+        }
+        
+        // Save attendance button
+        if (e.target.closest('#saveAttendance')) {
+            saveCurrentAttendance();
+        }
+        
+        // Logout button
+        if (e.target.closest('#logoutBtn')) {
+            handleLogout();
+        }
+    });
 }
 
 // Theme Toggle
@@ -37,8 +92,10 @@ function toggleTheme() {
     
     if (document.body.classList.contains('dark-mode')) {
         themeToggle.innerHTML = '<i class="fas fa-sun"></i> Light Mode';
+        localStorage.setItem('theme', 'dark');
     } else {
         themeToggle.innerHTML = '<i class="fas fa-moon"></i> Dark Mode';
+        localStorage.setItem('theme', 'light');
     }
 }
 
@@ -47,6 +104,14 @@ function checkRememberedUser() {
     const rememberedUser = localStorage.getItem('rememberedUser');
     if (rememberedUser) {
         currentUser = JSON.parse(rememberedUser);
+    }
+    
+    // Check for saved theme preference
+    const savedTheme = localStorage.getItem('theme') || 'light';
+    if (savedTheme === 'dark') {
+        document.body.classList.add('dark-mode');
+        document.body.classList.remove('light-mode');
+        themeToggle.innerHTML = '<i class="fas fa-sun"></i> Light Mode';
     }
 }
 
@@ -58,44 +123,68 @@ function handleLogin(e) {
     const password = document.getElementById('loginPassword').value;
     const rememberMe = document.getElementById('rememberMe').checked;
     
-    // Demo authentication (in a real app, this would be server-side)
-    if ((email === 'admin@college.com' && password === 'admin123') || 
-        (email === 'teacher@college.com' && password === 'teacher123')) {
-        
-        currentUser = {
-            email,
-            role: email === 'admin@college.com' ? 'admin' : 'teacher'
-        };
-        
-        if (rememberMe) {
-            localStorage.setItem('rememberedUser', JSON.stringify(currentUser));
+    // Show loading state
+    const submitButton = e.target.querySelector('button[type="submit"]');
+    const originalText = submitButton.innerHTML;
+    submitButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Logging in...';
+    submitButton.disabled = true;
+    
+    // Simulate API call with timeout
+    setTimeout(() => {
+        // Demo authentication (in a real app, this would be server-side)
+        if ((email === 'admin@college.com' && password === 'admin123') || 
+            (email === 'teacher@college.com' && password === 'teacher123')) {
+            
+            currentUser = {
+                email,
+                role: email === 'admin@college.com' ? 'admin' : 'teacher'
+            };
+            
+            if (rememberMe) {
+                localStorage.setItem('rememberedUser', JSON.stringify(currentUser));
+            } else {
+                localStorage.removeItem('rememberedUser');
+            }
+            
+            // Close the modal
+            const loginModal = bootstrap.Modal.getInstance(document.getElementById('loginModal'));
+            loginModal.hide();
+            
+            // Clear form
+            loginForm.reset();
+            
+            // Update UI
+            renderMainContent();
+            
+            // Show welcome toast
+            showToast(`Welcome back, ${currentUser.role === 'admin' ? 'Admin' : 'Teacher'}!`, 'success');
+        } else {
+            showToast('Invalid credentials. Please try again.', 'danger');
         }
         
-        // Close the modal
-        const loginModal = bootstrap.Modal.getInstance(document.getElementById('loginModal'));
-        loginModal.hide();
-        
-        // Clear form
-        loginForm.reset();
-        
-        // Update UI
-        renderMainContent();
-    } else {
-        alert('Invalid credentials. Please try again.');
-    }
+        // Reset button state
+        submitButton.innerHTML = originalText;
+        submitButton.disabled = false;
+    }, 1000);
 }
 
 // Handle Add Student
 function handleAddStudent(e) {
     e.preventDefault();
     
-    const name = document.getElementById('studentName').value;
-    const roll = document.getElementById('studentRoll').value;
+    const name = document.getElementById('studentName').value.trim();
+    const roll = document.getElementById('studentRoll').value.trim();
     const section = document.getElementById('studentSection').value;
+    
+    // Validate inputs
+    if (!name || !roll || !section) {
+        showToast('Please fill all fields', 'warning');
+        return;
+    }
     
     // Check if roll number already exists
     if (students.some(student => student.roll === roll)) {
-        alert('Student with this roll number already exists!');
+        showToast('Student with this roll number already exists!', 'danger');
         return;
     }
     
@@ -119,6 +208,9 @@ function handleAddStudent(e) {
     // Update UI
     renderMainContent();
     
+    // Show success message
+    showToast('Student added successfully!', 'success');
+    
     // If we're on the attendance page, refresh it
     if (document.getElementById('attendancePage')) {
         renderAttendancePage();
@@ -131,6 +223,11 @@ function handleSelectDate(e) {
     
     const date = document.getElementById('attendanceDate').value;
     const subject = document.getElementById('attendanceSubject').value;
+    
+    if (!date || !subject) {
+        showToast('Please select both date and subject', 'warning');
+        return;
+    }
     
     currentAttendance.date = date;
     currentAttendance.subject = subject;
@@ -153,6 +250,19 @@ function handleSelectDate(e) {
     
     // Render attendance page
     renderAttendancePage();
+    
+    // Show instruction toast
+    showToast('Click on status buttons to mark students present/absent', 'info');
+}
+
+// Delete Student
+function deleteStudent(studentId) {
+    if (confirm('Are you sure you want to delete this student? This action cannot be undone.')) {
+        students = students.filter(student => student.id !== studentId);
+        saveStudents();
+        renderMainContent();
+        showToast('Student deleted successfully', 'success');
+    }
 }
 
 // Save Students to Local Storage
@@ -179,12 +289,12 @@ function renderMainContent() {
 // Render Logged Out View
 function renderLoggedOutView() {
     mainContent.innerHTML = `
-        <div class="jumbotron text-center py-5">
+        <div class="jumbotron text-center py-5 animate__animated animate__fadeIn">
             <h1 class="display-4">Welcome to Attendance System</h1>
             <p class="lead">A modern solution for managing college attendance</p>
             <hr class="my-4">
             <p>Please login to access the system features</p>
-            <button class="btn btn-primary btn-lg" data-bs-toggle="modal" data-bs-target="#loginModal">
+            <button class="btn btn-primary btn-lg animate-hover" data-bs-toggle="modal" data-bs-target="#loginModal">
                 <i class="fas fa-sign-in-alt"></i> Login
             </button>
         </div>
@@ -194,21 +304,21 @@ function renderLoggedOutView() {
 // Render Admin Dashboard
 function renderAdminDashboard() {
     mainContent.innerHTML = `
-        <div class="row mb-4">
+        <div class="row mb-4 animate__animated animate__fadeIn">
             <div class="col-md-6">
                 <h2><i class="fas fa-tachometer-alt me-2"></i>Admin Dashboard</h2>
             </div>
             <div class="col-md-6 text-md-end">
-                <button class="btn btn-success me-2" data-bs-toggle="modal" data-bs-target="#addStudentModal">
+                <button class="btn btn-success me-2 animate-hover" data-bs-toggle="modal" data-bs-target="#addStudentModal">
                     <i class="fas fa-user-plus me-1"></i> Add Student
                 </button>
-                <button class="btn btn-danger" id="logoutBtn">
+                <button class="btn btn-danger animate-hover" id="logoutBtn">
                     <i class="fas fa-sign-out-alt me-1"></i> Logout
                 </button>
             </div>
         </div>
         
-        <div class="row mb-4">
+        <div class="row mb-4 animate__animated animate__fadeInUp">
             <div class="col-md-4 mb-3">
                 <div class="card admin-card text-white bg-primary h-100">
                     <div class="card-body">
@@ -235,7 +345,7 @@ function renderAdminDashboard() {
             </div>
         </div>
         
-        <div class="card mb-4">
+        <div class="card mb-4 animate__animated animate__fadeInUp">
             <div class="card-header">
                 <h5 class="mb-0"><i class="fas fa-list me-2"></i>Student List</h5>
             </div>
@@ -244,7 +354,7 @@ function renderAdminDashboard() {
             </div>
         </div>
         
-        <div class="card">
+        <div class="card animate__animated animate__fadeInUp">
             <div class="card-header">
                 <h5 class="mb-0"><i class="fas fa-history me-2"></i>Recent Attendance</h5>
             </div>
@@ -253,28 +363,28 @@ function renderAdminDashboard() {
             </div>
         </div>
     `;
-    
-    document.getElementById('logoutBtn').addEventListener('click', handleLogout);
 }
 
 // Render Teacher Dashboard
 function renderTeacherDashboard() {
+    const teacherRecords = attendanceRecords.filter(r => r.teacher === currentUser.email);
+    
     mainContent.innerHTML = `
-        <div class="row mb-4">
+        <div class="row mb-4 animate__animated animate__fadeIn">
             <div class="col-md-6">
                 <h2><i class="fas fa-chalkboard-teacher me-2"></i>Teacher Dashboard</h2>
             </div>
             <div class="col-md-6 text-md-end">
-                <button class="btn btn-primary me-2" data-bs-toggle="modal" data-bs-target="#selectDateModal">
+                <button class="btn btn-primary me-2 animate-hover" data-bs-toggle="modal" data-bs-target="#selectDateModal">
                     <i class="fas fa-calendar-plus me-1"></i> Take Attendance
                 </button>
-                <button class="btn btn-danger" id="logoutBtn">
+                <button class="btn btn-danger animate-hover" id="logoutBtn">
                     <i class="fas fa-sign-out-alt me-1"></i> Logout
                 </button>
             </div>
         </div>
         
-        <div class="row mb-4">
+        <div class="row mb-4 animate__animated animate__fadeInUp">
             <div class="col-md-6 mb-3">
                 <div class="card admin-card text-white bg-primary h-100">
                     <div class="card-body">
@@ -287,25 +397,23 @@ function renderTeacherDashboard() {
                 <div class="card admin-card text-white bg-success h-100">
                     <div class="card-body">
                         <h5 class="card-title"><i class="fas fa-calendar-check me-2"></i>Your Records</h5>
-                        <p class="card-text display-4">${attendanceRecords.filter(r => r.teacher === currentUser.email).length}</p>
+                        <p class="card-text display-4">${teacherRecords.length}</p>
                     </div>
                 </div>
             </div>
         </div>
         
-        <div class="card">
+        <div class="card animate__animated animate__fadeInUp">
             <div class="card-header">
                 <h5 class="mb-0"><i class="fas fa-history me-2"></i>Your Recent Attendance</h5>
             </div>
             <div class="card-body">
-                ${attendanceRecords.filter(r => r.teacher === currentUser.email).length > 0 ? 
+                ${teacherRecords.length > 0 ? 
                     renderRecentAttendance(currentUser.email) : 
                     '<p class="text-muted">No attendance records yet.</p>'}
             </div>
         </div>
     `;
-    
-    document.getElementById('logoutBtn').addEventListener('click', handleLogout);
 }
 
 // Render Student Table
@@ -323,12 +431,12 @@ function renderStudentTable() {
                 </thead>
                 <tbody>
                     ${students.map(student => `
-                        <tr>
+                        <tr class="animate__animated animate__fadeIn">
                             <td>${student.roll}</td>
                             <td>${student.name}</td>
                             <td>${student.section}</td>
                             <td>
-                                <button class="btn btn-sm btn-outline-danger delete-student" data-id="${student.id}">
+                                <button class="btn btn-sm btn-outline-danger delete-student animate-hover" data-id="${student.id}" data-bs-toggle="tooltip" title="Delete Student">
                                     <i class="fas fa-trash-alt"></i>
                                 </button>
                             </td>
@@ -353,25 +461,25 @@ function renderRecentAttendance(teacherEmail = null) {
                     <tr>
                         <th>Date</th>
                         <th>Subject</th>
-                        <th>Teacher</th>
+                        ${teacherEmail ? '' : '<th>Teacher</th>'}
                         <th>Present</th>
                         <th>Absent</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
-                    ${recordsToShow.map(record => `
-                        <tr>
+                    ${recordsToShow.map((record, index) => `
+                        <tr class="animate__animated animate__fadeIn" style="animation-delay: ${index * 0.1}s">
                             <td>${formatDate(record.date)}</td>
                             <td>${record.subject}</td>
-                            <td>${record.teacher}</td>
+                            ${teacherEmail ? '' : `<td>${record.teacher}</td>`}
                             <td>${record.records.filter(r => r.status === 'present').length}</td>
                             <td>${record.records.filter(r => r.status === 'absent').length}</td>
                             <td>
-                                <button class="btn btn-sm btn-outline-primary view-attendance" data-id="${record.id}">
+                                <button class="btn btn-sm btn-outline-primary view-attendance me-1 animate-hover" data-id="${record.id}" data-bs-toggle="tooltip" title="View Details">
                                     <i class="fas fa-eye"></i>
                                 </button>
-                                <button class="btn btn-sm btn-outline-success download-attendance" data-id="${record.id}">
+                                <button class="btn btn-sm btn-outline-success download-attendance animate-hover" data-id="${record.id}" data-bs-toggle="tooltip" title="Download PDF">
                                     <i class="fas fa-download"></i>
                                 </button>
                             </td>
@@ -386,17 +494,17 @@ function renderRecentAttendance(teacherEmail = null) {
 // Render Attendance Page
 function renderAttendancePage() {
     mainContent.innerHTML = `
-        <div id="attendancePage">
+        <div id="attendancePage" class="animate__animated animate__fadeIn">
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <h2>
                     <i class="fas fa-calendar-check me-2"></i>
                     Attendance for ${formatDate(currentAttendance.date)} - ${currentAttendance.subject}
                 </h2>
                 <div>
-                    <button class="btn btn-secondary me-2" id="backToDashboard">
+                    <button class="btn btn-secondary me-2 animate-hover" id="backToDashboard">
                         <i class="fas fa-arrow-left me-1"></i> Back
                     </button>
-                    <button class="btn btn-success" id="saveAttendance">
+                    <button class="btn btn-success animate-hover" id="saveAttendance">
                         <i class="fas fa-save me-1"></i> Save
                     </button>
                 </div>
@@ -428,16 +536,16 @@ function renderAttendancePage() {
                                 </tr>
                             </thead>
                             <tbody>
-                                ${currentAttendance.records.map(record => {
+                                ${currentAttendance.records.map((record, index) => {
                                     const student = students.find(s => s.id === record.studentId);
                                     return `
-                                        <tr>
-                                            <td>${student.roll}</td>
-                                            <td>${student.name}</td>
-                                            <td>${student.section}</td>
+                                        <tr class="animate__animated animate__fadeIn" style="animation-delay: ${index * 0.05}s">
+                                            <td>${student?.roll || 'N/A'}</td>
+                                            <td>${student?.name || 'Unknown Student'}</td>
+                                            <td>${student?.section || 'N/A'}</td>
                                             <td>
-                                                <div class="status-btn ${record.status === 'present' ? 'present' : 'absent'}" 
-                                                     data-student-id="${student.id}">
+                                                <div class="status-btn ${record.status === 'present' ? 'present' : 'absent'} animate-hover" 
+                                                     data-student-id="${student?.id || ''}">
                                                     <i class="fas ${record.status === 'present' ? 'fa-check' : 'fa-times'}"></i>
                                                 </div>
                                             </td>
@@ -451,45 +559,40 @@ function renderAttendancePage() {
             </div>
         </div>
     `;
+}
+
+// Toggle Attendance Status
+function toggleAttendanceStatus(button) {
+    const studentId = button.getAttribute('data-student-id');
+    const record = currentAttendance.records.find(r => r.studentId === studentId);
     
-    // Add event listeners for status buttons
-    document.querySelectorAll('.status-btn').forEach(btn => {
-        btn.addEventListener('click', function() {
-            const studentId = this.getAttribute('data-student-id');
-            const record = currentAttendance.records.find(r => r.studentId === studentId);
-            
-            if (record.status === 'present') {
-                record.status = 'absent';
-                this.classList.remove('present');
-                this.classList.add('absent');
-                this.innerHTML = '<i class="fas fa-times"></i>';
-            } else {
-                record.status = 'present';
-                this.classList.remove('absent');
-                this.classList.add('present');
-                this.innerHTML = '<i class="fas fa-check"></i>';
-            }
-            
-            // Update counters
-            const presentCount = currentAttendance.records.filter(r => r.status === 'present').length;
-            const absentCount = currentAttendance.records.filter(r => r.status === 'absent').length;
-            
-            document.querySelector('.badge.bg-success').innerHTML = `<i class="fas fa-check"></i> Present: ${presentCount}`;
-            document.querySelector('.badge.bg-danger').innerHTML = `<i class="fas fa-times"></i> Absent: ${absentCount}`;
-        });
-    });
+    if (!record) return;
     
-    // Back button
-    document.getElementById('backToDashboard').addEventListener('click', function() {
-        if (confirm('Are you sure you want to leave? Any unsaved changes will be lost.')) {
-            renderMainContent();
-        }
-    });
+    if (record.status === 'present') {
+        record.status = 'absent';
+        button.classList.remove('present');
+        button.classList.add('absent');
+        button.innerHTML = '<i class="fas fa-times"></i>';
+    } else {
+        record.status = 'present';
+        button.classList.remove('absent');
+        button.classList.add('present');
+        button.innerHTML = '<i class="fas fa-check"></i>';
+    }
     
-    // Save button
-    document.getElementById('saveAttendance').addEventListener('click', function() {
-        saveCurrentAttendance();
-    });
+    // Update counters
+    const presentCount = currentAttendance.records.filter(r => r.status === 'present').length;
+    const absentCount = currentAttendance.records.filter(r => r.status === 'absent').length;
+    
+    document.querySelector('.badge.bg-success').innerHTML = `<i class="fas fa-check"></i> Present: ${presentCount}`;
+    document.querySelector('.badge.bg-danger').innerHTML = `<i class="fas fa-times"></i> Absent: ${absentCount}`;
+}
+
+// Confirm Leave Attendance
+function confirmLeaveAttendance() {
+    if (confirm('Are you sure you want to leave? Any unsaved changes will be lost.')) {
+        renderMainContent();
+    }
 }
 
 // Save Current Attendance
@@ -505,55 +608,9 @@ function saveCurrentAttendance() {
     attendanceRecords.push(attendanceRecord);
     saveAttendanceRecords();
     
-    alert('Attendance saved successfully!');
-    renderMainContent();
-    
-    // In a real app, you would also save to Google Sheets here
-    // For demo purposes, we're just using local storage
-    console.log('Would save to Google Sheets:', attendanceRecord);
-}
-
-// Handle Logout
-function handleLogout() {
-    currentUser = null;
-    localStorage.removeItem('rememberedUser');
+    showToast('Attendance saved successfully!', 'success');
     renderMainContent();
 }
-
-// Format Date
-function formatDate(dateString) {
-    const options = { year: 'numeric', month: 'long', day: 'numeric' };
-    return new Date(dateString).toLocaleDateString(undefined, options);
-}
-
-// After rendering tables, set up event listeners for dynamic elements
-document.addEventListener('click', function(e) {
-    // Delete student
-    if (e.target.classList.contains('delete-student') || e.target.closest('.delete-student')) {
-        const button = e.target.classList.contains('delete-student') ? e.target : e.target.closest('.delete-student');
-        const studentId = button.getAttribute('data-id');
-        
-        if (confirm('Are you sure you want to delete this student?')) {
-            students = students.filter(student => student.id !== studentId);
-            saveStudents();
-            renderMainContent();
-        }
-    }
-    
-    // View attendance details
-    if (e.target.classList.contains('view-attendance') || e.target.closest('.view-attendance')) {
-        const button = e.target.classList.contains('view-attendance') ? e.target : e.target.closest('.view-attendance');
-        const recordId = button.getAttribute('data-id');
-        viewAttendanceDetails(recordId);
-    }
-    
-    // Download attendance
-    if (e.target.classList.contains('download-attendance') || e.target.closest('.download-attendance')) {
-        const button = e.target.classList.contains('download-attendance') ? e.target : e.target.closest('.download-attendance');
-        const recordId = button.getAttribute('data-id');
-        downloadAttendance(recordId);
-    }
-});
 
 // View Attendance Details
 function viewAttendanceDetails(recordId) {
@@ -570,62 +627,58 @@ function viewAttendanceDetails(recordId) {
         return student ? `${student.name} (${student.roll})` : 'Unknown Student';
     });
     
-    const modalContent = `
-        <div class="modal-header">
-            <h5 class="modal-title">Attendance Details</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
-        <div class="modal-body">
-            <p><strong>Date:</strong> ${formatDate(record.date)}</p>
-            <p><strong>Subject:</strong> ${record.subject}</p>
-            <p><strong>Teacher:</strong> ${record.teacher}</p>
-            
-            <div class="row mt-4">
-                <div class="col-md-6">
-                    <h6>Present Students (${presentStudents.length})</h6>
-                    <ul class="list-group">
-                        ${presentStudents.map(student => `<li class="list-group-item">${student}</li>`).join('')}
-                    </ul>
-                </div>
-                <div class="col-md-6">
-                    <h6>Absent Students (${absentStudents.length})</h6>
-                    <ul class="list-group">
-                        ${absentStudents.map(student => `<li class="list-group-item">${student}</li>`).join('')}
-                    </ul>
-                </div>
-            </div>
-        </div>
-        <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-        </div>
-    `;
+    const modalId = 'attendanceDetailsModal-' + recordId;
     
-    // Create a modal dynamically
-    const modal = document.createElement('div');
-    modal.className = 'modal fade';
-    modal.id = 'attendanceDetailsModal';
-    modal.tabIndex = '-1';
-    modal.setAttribute('aria-hidden', 'true');
-    modal.innerHTML = `
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                ${modalContent}
+    const modalHTML = `
+        <div class="modal fade" id="${modalId}" tabindex="-1" aria-labelledby="${modalId}Label" aria-hidden="true">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="${modalId}Label">Attendance Details</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p><strong>Date:</strong> ${formatDate(record.date)}</p>
+                        <p><strong>Subject:</strong> ${record.subject}</p>
+                        <p><strong>Teacher:</strong> ${record.teacher}</p>
+                        
+                        <div class="row mt-4">
+                            <div class="col-md-6">
+                                <h6>Present Students (${presentStudents.length})</h6>
+                                <ul class="list-group">
+                                    ${presentStudents.map(student => `<li class="list-group-item">${student}</li>`).join('')}
+                                </ul>
+                            </div>
+                            <div class="col-md-6">
+                                <h6>Absent Students (${absentStudents.length})</h6>
+                                <ul class="list-group">
+                                    ${absentStudents.map(student => `<li class="list-group-item">${student}</li>`).join('')}
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    </div>
+                </div>
             </div>
         </div>
     `;
     
-    document.body.appendChild(modal);
+    // Add modal to container
+    dynamicModalContainer.innerHTML = modalHTML;
     
-    const modalInstance = new bootstrap.Modal(modal);
-    modalInstance.show();
+    // Show the modal
+    const modal = new bootstrap.Modal(document.getElementById(modalId));
+    modal.show();
     
     // Remove modal from DOM after it's hidden
-    modal.addEventListener('hidden.bs.modal', function() {
-        document.body.removeChild(modal);
+    document.getElementById(modalId).addEventListener('hidden.bs.modal', function() {
+        dynamicModalContainer.innerHTML = '';
     });
 }
 
-// Download Attendance
+// Download Attendance as PDF
 function downloadAttendance(recordId) {
     const record = attendanceRecords.find(r => r.id === recordId);
     if (!record) return;
@@ -636,6 +689,7 @@ function downloadAttendance(recordId) {
     
     // Title
     doc.setFontSize(18);
+    doc.setTextColor(40);
     doc.text(`Attendance Report - ${record.subject}`, 14, 20);
     
     // Details
@@ -681,4 +735,69 @@ function downloadAttendance(recordId) {
             // Footer
             doc.setFontSize(10);
             doc.setTextColor(150);
-            doc.text(`Generated on ${new Date().toLocaleDateString()}`, data.settings.m
+            doc.text(`Generated on ${new Date().toLocaleDateString()}`, data.settings.margin.left, doc.internal.pageSize.height - 10);
+        }
+    });
+    
+    // Save the PDF
+    doc.save(`Attendance_${record.subject}_${formatDate(record.date, 'YYYY-MM-DD')}.pdf`);
+}
+
+// Handle Logout
+function handleLogout() {
+    currentUser = null;
+    localStorage.removeItem('rememberedUser');
+    renderMainContent();
+    showToast('Logged out successfully', 'info');
+}
+
+// Format Date
+function formatDate(dateString, format = 'long') {
+    const date = new Date(dateString);
+    if (format === 'YYYY-MM-DD') {
+        return date.toISOString().split('T')[0];
+    }
+    
+    const options = { year: 'numeric', month: 'long', day: 'numeric' };
+    return date.toLocaleDateString(undefined, options);
+}
+
+// Show Toast Notification
+function showToast(message, type = 'info') {
+    // Remove any existing toasts
+    const existingToasts = document.querySelectorAll('.toast-container');
+    existingToasts.forEach(toast => toast.remove());
+    
+    const toastContainer = document.createElement('div');
+    toastContainer.className = 'toast-container position-fixed bottom-0 end-0 p-3';
+    toastContainer.style.zIndex = '11';
+    
+    const toastHTML = `
+        <div class="toast show" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="toast-header">
+                <strong class="me-auto">Attendance System</strong>
+                <small>Just now</small>
+                <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+            <div class="toast-body text-white bg-${type}">
+                ${message}
+            </div>
+        </div>
+    `;
+    
+    toastContainer.innerHTML = toastHTML;
+    document.body.appendChild(toastContainer);
+    
+    // Auto-remove after 5 seconds
+    setTimeout(() => {
+        toastContainer.remove();
+    }, 5000);
+}
+
+// Initialize tooltips when new content is added
+function initializeTooltips() {
+    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+}

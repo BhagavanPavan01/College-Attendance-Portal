@@ -8,23 +8,17 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Animate.css -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
     <!-- Custom CSS -->
     <link rel="stylesheet" href="styles.css">
-    <!-- jsPDF -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
-
-        <!-- Bootstrap JS Bundle with Popper -->
-        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-        <!-- Custom JS -->
-        <script src="script.js" defer></script>
 </head>
 <body class="light-mode">
     <div class="container-fluid">
         <!-- Header -->
-        <header class="d-flex justify-content-between align-items-center py-3 mb-4 border-bottom">
+        <header class="d-flex justify-content-between align-items-center py-3 mb-4 border-bottom animate__animated animate__fadeInDown">
             <div class="d-flex align-items-center">
-                <i class="fas fa-user-graduate me-2 fs-3"></i>
+                <i class="fas fa-user-graduate me-2 fs-3 text-primary"></i>
                 <h1 class="h4 mb-0">JNTU-GV College Engineering Attendance System</h1>
             </div>
             <div>
@@ -37,8 +31,8 @@
             </div>
         </header>
 
-        <!-- Main Content (changes based on login state) -->
-        <div id="mainContent">
+        <!-- Main Content -->
+        <div id="mainContent" class="animate__animated animate__fadeIn">
             <!-- Welcome message when not logged in -->
             <div class="jumbotron text-center py-5">
                 <h1 class="display-4">Welcome to Attendance System</h1>
@@ -152,12 +146,21 @@
             </div>
         </div>
 
+        <!-- Attendance Details Modal (Dynamic) -->
+        <div id="dynamicModalContainer"></div>
+
         <!-- Footer -->
-        <footer class="mt-5 pt-4 pb-2 border-top text-center">
+        <footer class="mt-5 pt-4 pb-2 border-top text-center animate__animated animate__fadeInUp">
             <p class="text-muted">© 2023 College Attendance System. All rights reserved.</p>
         </footer>
     </div>
 
-
+    <!-- Bootstrap JS Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- jsPDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+    <!-- Custom JS -->
+    <script src="script.js"></script>
 </body>
 </html>
