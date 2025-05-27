@@ -1,9 +1,10 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>College Attendance System</title>
+    <title>JNTU-GV College Attendance System</title>
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Font Awesome -->
@@ -13,13 +14,15 @@
     <!-- Custom CSS -->
     <link rel="stylesheet" href="styles.css">
 </head>
+
 <body class="light-mode">
     <div class="container-fluid">
         <!-- Header -->
-        <header class="d-flex justify-content-between align-items-center py-3 mb-4 border-bottom animate__animated animate__fadeInDown">
+        <header
+            class="d-flex justify-content-between align-items-center py-3 mb-4 border-bottom animate__animated animate__fadeInDown">
             <div class="d-flex align-items-center">
-                <i class="fas fa-user-graduate me-2 fs-3 text-primary"></i>
-                <h1 class="h4 mb-0">JNTU-GV College Engineering Attendance System</h1>
+                <i class="fas fa-user-graduate me-2 fs-3 text-primary logo-align"></i>
+                <h1 class="h4 mb-0">JNTU-GV College of Engineering Vizianagaram Attendance System</h1>
             </div>
             <div>
                 <button id="themeToggle" class="btn btn-sm btn-outline-secondary me-2">
@@ -80,7 +83,8 @@
         </div>
 
         <!-- Add Student Modal -->
-        <div class="modal fade" id="addStudentModal" tabindex="-1" aria-labelledby="addStudentModalLabel" aria-hidden="true">
+        <div class="modal fade" id="addStudentModal" tabindex="-1" aria-labelledby="addStudentModalLabel"
+            aria-hidden="true">
             <div class="modal-dialog">
                 <div class="modal-content">
                     <div class="modal-header">
@@ -101,10 +105,10 @@
                                 <label for="studentSection" class="form-label">Section</label>
                                 <select class="form-select" id="studentSection" required>
                                     <option value="">Select Section</option>
-                                    <option value="A">A</option>
-                                    <option value="B">B</option>
-                                    <option value="C">C</option>
-                                    <option value="D">D</option>
+                                    <option value="A">MCA</option>
+                                    <option value="B">MBA</option>
+                                    <option value="C">M-Tech</option>
+                                    <option value="D">B-Tech</option>
                                 </select>
                             </div>
                             <button type="submit" class="btn btn-primary w-100">Add Student</button>
@@ -115,7 +119,8 @@
         </div>
 
         <!-- Select Date Modal -->
-        <div class="modal fade" id="selectDateModal" tabindex="-1" aria-labelledby="selectDateModalLabel" aria-hidden="true">
+        <div class="modal fade" id="selectDateModal" tabindex="-1" aria-labelledby="selectDateModalLabel"
+            aria-hidden="true">
             <div class="modal-dialog">
                 <div class="modal-content">
                     <div class="modal-header">
@@ -132,11 +137,11 @@
                                 <label for="attendanceSubject" class="form-label">Subject</label>
                                 <select class="form-select" id="attendanceSubject" required>
                                     <option value="">Select Subject</option>
-                                    <option value="Mathematics">Mathematics</option>
-                                    <option value="Physics">Physics</option>
-                                    <option value="Chemistry">Chemistry</option>
+                                    <option value="Mathematics">Data Structres</option>
+                                    <option value="Physics">Database management System</option>
+                                    <option value="Chemistry">Design and analysis and algorithm</option>
                                     <option value="Computer Science">Computer Science</option>
-                                    <option value="English">English</option>
+                                    <option value="English">Java</option>
                                 </select>
                             </div>
                             <button type="submit" class="btn btn-primary w-100">Proceed</button>
@@ -146,8 +151,117 @@
             </div>
         </div>
 
+        <!-- Bulk Upload Modal - Improved Version -->
+        <div class="modal fade" id="bulkUploadModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header bg-primary text-white">
+                        <h5 class="modal-title">
+                            <i class="fas fa-users-class me-2"></i>Bulk Student Upload
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                            aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            Upload a CSV or Excel file containing student data. Ensure the file follows the required
+                            format.
+                        </div>
+
+                        <form id="bulkUploadForm" class="needs-validation" novalidate>
+                            <div class="mb-4">
+                                <div class="file-upload-wrapper">
+                                    <label for="studentFile" class="form-label fw-bold">Select File</label>
+                                    <input type="file" id="studentFile" class="form-control file-upload-input"
+                                        accept=".csv,.xlsx,.xls" required>
+                                    <div class="invalid-feedback">Please select a valid file</div>
+                                </div>
+                            </div>
+
+                            <div class="row g-3 mb-4">
+                                <div class="col-md-6">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="overwriteExisting" checked>
+                                        <label class="form-check-label" for="overwriteExisting">
+                                            Overwrite existing records
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="col-md-6 text-end">
+                                    <a href="/templates/student_upload_template.csv" id="downloadTemplate"
+                                        class="btn btn-sm btn-outline-secondary">
+                                        <i class="fas fa-file-download me-1"></i>Download Template
+                                    </a>
+                                </div>
+                            </div>
+
+                            <div class="upload-progress d-none mb-3">
+                                <div class="d-flex justify-content-between mb-1">
+                                    <span>Uploading...</span>
+                                    <span class="progress-percent">0%</span>
+                                </div>
+                                <div class="progress" style="height: 10px;">
+                                    <div class="progress-bar progress-bar-striped progress-bar-animated"
+                                        role="progressbar" style="width: 0%"></div>
+                                </div>
+                            </div>
+
+                            <div class="d-grid gap-2">
+                                <button type="submit" class="btn btn-primary btn-lg" id="uploadBtn">
+                                    <i class="fas fa-cloud-upload-alt me-2"></i>Upload Students
+                                </button>
+                            </div>
+                        </form>
+
+                        <div class="upload-results mt-4 d-none">
+                            <div class="alert alert-success">
+                                <i class="fas fa-check-circle me-2"></i>
+                                <span class="result-message">Upload successful!</span>
+                            </div>
+                            <div class="card">
+                                <div class="card-body">
+                                    <h6 class="card-title">Upload Summary</h6>
+                                    <ul class="list-group list-group-flush">
+                                        <li class="list-group-item d-flex justify-content-between">
+                                            <span>Total Records:</span>
+                                            <span class="fw-bold total-records">0</span>
+                                        </li>
+                                        <li class="list-group-item d-flex justify-content-between">
+                                            <span>Successfully Added:</span>
+                                            <span class="fw-bold text-success added-count">0</span>
+                                        </li>
+                                        <li class="list-group-item d-flex justify-content-between">
+                                            <span>Updated:</span>
+                                            <span class="fw-bold text-warning updated-count">0</span>
+                                        </li>
+                                        <li class="list-group-item d-flex justify-content-between">
+                                            <span>Errors:</span>
+                                            <span class="fw-bold text-danger error-count">0</span>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                            <div class="error-details mt-3 d-none">
+                                <button class="btn btn-sm btn-outline-danger toggle-errors">
+                                    <i class="fas fa-exclamation-triangle me-1"></i>View Error Details
+                                </button>
+                                <div class="error-list mt-2 collapse"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                            Close
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Attendance Details Modal (Dynamic) -->
         <div id="dynamicModalContainer"></div>
+
 
         <!-- Footer -->
         <footer class="mt-5 pt-4 pb-2 border-top text-center animate__animated animate__fadeInUp">
@@ -160,7 +274,9 @@
     <!-- jsPDF -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <!-- Custom JS -->
     <script src="script.js"></script>
 </body>
+
 </html>

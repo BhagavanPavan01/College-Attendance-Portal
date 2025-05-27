@@ -9,7 +9,12 @@ body {
 
 .container-fluid {
     flex: 1;
-    padding: 0 15px;
+    padding: 0 0px;
+    margin: 10px;
+}
+
+.logo-align{
+    padding-left: 10px;
 }
 
 /* Light Mode */

@@ -17,14 +17,14 @@ const mainContent = document.getElementById('mainContent');
 const dynamicModalContainer = document.getElementById('dynamicModalContainer');
 
 // Initialize the app
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     // Set default date for attendance date picker to today
     document.getElementById('attendanceDate')?.setAttribute('value', new Date().toISOString().split('T')[0]);
-    
+
     checkRememberedUser();
     renderMainContent();
     setupEventListeners();
-    
+
     // Initialize tooltips
     const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
     tooltipTriggerList.map(function (tooltipTriggerEl) {
@@ -38,46 +38,46 @@ function setupEventListeners() {
     if (loginForm) loginForm.addEventListener('submit', handleLogin);
     if (addStudentForm) addStudentForm.addEventListener('submit', handleAddStudent);
     if (selectDateForm) selectDateForm.addEventListener('submit', handleSelectDate);
-    
+
     // Dynamic event listeners for elements that might be added later
-    document.addEventListener('click', function(e) {
+    document.addEventListener('click', function (e) {
         // Delete student
         if (e.target.closest('.delete-student')) {
             const button = e.target.closest('.delete-student');
             const studentId = button.getAttribute('data-id');
             deleteStudent(studentId);
         }
-        
+
         // View attendance details
         if (e.target.closest('.view-attendance')) {
             const button = e.target.closest('.view-attendance');
             const recordId = button.getAttribute('data-id');
             viewAttendanceDetails(recordId);
         }
-        
+
         // Download attendance
         if (e.target.closest('.download-attendance')) {
             const button = e.target.closest('.download-attendance');
             const recordId = button.getAttribute('data-id');
             downloadAttendance(recordId);
         }
-        
+
         // Status buttons in attendance taking
         if (e.target.closest('.status-btn')) {
             const button = e.target.closest('.status-btn');
             toggleAttendanceStatus(button);
         }
-        
+
         // Back to dashboard button
         if (e.target.closest('#backToDashboard')) {
             confirmLeaveAttendance();
         }
-        
+
         // Save attendance button
         if (e.target.closest('#saveAttendance')) {
             saveCurrentAttendance();
         }
-        
+
         // Logout button
         if (e.target.closest('#logoutBtn')) {
             handleLogout();
@@ -89,7 +89,7 @@ function setupEventListeners() {
 function toggleTheme() {
     document.body.classList.toggle('dark-mode');
     document.body.classList.toggle('light-mode');
-    
+
     if (document.body.classList.contains('dark-mode')) {
         themeToggle.innerHTML = '<i class="fas fa-sun"></i> Light Mode';
         localStorage.setItem('theme', 'dark');
@@ -105,7 +105,7 @@ function checkRememberedUser() {
     if (rememberedUser) {
         currentUser = JSON.parse(rememberedUser);
     }
-    
+
     // Check for saved theme preference
     const savedTheme = localStorage.getItem('theme') || 'light';
     if (savedTheme === 'dark') {
@@ -118,50 +118,50 @@ function checkRememberedUser() {
 // Handle Login
 function handleLogin(e) {
     e.preventDefault();
-    
+
     const email = document.getElementById('loginEmail').value;
     const password = document.getElementById('loginPassword').value;
     const rememberMe = document.getElementById('rememberMe').checked;
-    
+
     // Show loading state
     const submitButton = e.target.querySelector('button[type="submit"]');
     const originalText = submitButton.innerHTML;
     submitButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Logging in...';
     submitButton.disabled = true;
-    
+
     // Simulate API call with timeout
     setTimeout(() => {
         // Demo authentication (in a real app, this would be server-side)
-        if ((email === 'admin@college.com' && password === 'admin123') || 
+        if ((email === 'admin@college.com' && password === 'admin123') ||
             (email === 'teacher@college.com' && password === 'teacher123')) {
-            
+
             currentUser = {
                 email,
                 role: email === 'admin@college.com' ? 'admin' : 'teacher'
             };
-            
+
             if (rememberMe) {
                 localStorage.setItem('rememberedUser', JSON.stringify(currentUser));
             } else {
                 localStorage.removeItem('rememberedUser');
             }
-            
+
             // Close the modal
             const loginModal = bootstrap.Modal.getInstance(document.getElementById('loginModal'));
             loginModal.hide();
-            
+
             // Clear form
             loginForm.reset();
-            
+
             // Update UI
             renderMainContent();
-            
+
             // Show welcome toast
             showToast(`Welcome back, ${currentUser.role === 'admin' ? 'Admin' : 'Teacher'}!`, 'success');
         } else {
             showToast('Invalid credentials. Please try again.', 'danger');
         }
-        
+
         // Reset button state
         submitButton.innerHTML = originalText;
         submitButton.disabled = false;
@@ -171,46 +171,46 @@ function handleLogin(e) {
 // Handle Add Student
 function handleAddStudent(e) {
     e.preventDefault();
-    
+
     const name = document.getElementById('studentName').value.trim();
     const roll = document.getElementById('studentRoll').value.trim();
     const section = document.getElementById('studentSection').value;
-    
+
     // Validate inputs
     if (!name || !roll || !section) {
         showToast('Please fill all fields', 'warning');
         return;
     }
-    
+
     // Check if roll number already exists
     if (students.some(student => student.roll === roll)) {
         showToast('Student with this roll number already exists!', 'danger');
         return;
     }
-    
+
     const newStudent = {
         id: Date.now().toString(),
         name,
         roll,
         section
     };
-    
+
     students.push(newStudent);
     saveStudents();
-    
+
     // Close the modal
     const addStudentModal = bootstrap.Modal.getInstance(document.getElementById('addStudentModal'));
     addStudentModal.hide();
-    
+
     // Clear form
     addStudentForm.reset();
-    
+
     // Update UI
     renderMainContent();
-    
+
     // Show success message
     showToast('Student added successfully!', 'success');
-    
+
     // If we're on the attendance page, refresh it
     if (document.getElementById('attendancePage')) {
         renderAttendancePage();
@@ -220,19 +220,19 @@ function handleAddStudent(e) {
 // Handle Select Date
 function handleSelectDate(e) {
     e.preventDefault();
-    
+
     const date = document.getElementById('attendanceDate').value;
     const subject = document.getElementById('attendanceSubject').value;
-    
+
     if (!date || !subject) {
         showToast('Please select both date and subject', 'warning');
         return;
     }
-    
+
     currentAttendance.date = date;
     currentAttendance.subject = subject;
     currentAttendance.records = [];
-    
+
     // Initialize attendance records for all students
     students.forEach(student => {
         currentAttendance.records.push({
@@ -240,17 +240,17 @@ function handleSelectDate(e) {
             status: 'present' // default to present
         });
     });
-    
+
     // Close the modal
     const selectDateModal = bootstrap.Modal.getInstance(document.getElementById('selectDateModal'));
     selectDateModal.hide();
-    
+
     // Clear form
     selectDateForm.reset();
-    
+
     // Render attendance page
     renderAttendancePage();
-    
+
     // Show instruction toast
     showToast('Click on status buttons to mark students present/absent', 'info');
 }
@@ -362,13 +362,17 @@ function renderAdminDashboard() {
                 ${attendanceRecords.length > 0 ? renderRecentAttendance() : '<p class="text-muted">No attendance records yet.</p>'}
             </div>
         </div>
+
+        <button class="btn btn-info me-2 animate-hover" data-bs-toggle="modal" data-bs-target="#bulkUploadModal">
+            <i class="fas fa-file-import me-1"></i> Bulk Upload
+        </button>
     `;
 }
 
 // Render Teacher Dashboard
 function renderTeacherDashboard() {
     const teacherRecords = attendanceRecords.filter(r => r.teacher === currentUser.email);
-    
+
     mainContent.innerHTML = `
         <div class="row mb-4 animate__animated animate__fadeIn">
             <div class="col-md-6">
@@ -408,9 +412,9 @@ function renderTeacherDashboard() {
                 <h5 class="mb-0"><i class="fas fa-history me-2"></i>Your Recent Attendance</h5>
             </div>
             <div class="card-body">
-                ${teacherRecords.length > 0 ? 
-                    renderRecentAttendance(currentUser.email) : 
-                    '<p class="text-muted">No attendance records yet.</p>'}
+                ${teacherRecords.length > 0 ?
+            renderRecentAttendance(currentUser.email) :
+            '<p class="text-muted">No attendance records yet.</p>'}
             </div>
         </div>
     `;
@@ -450,10 +454,10 @@ function renderStudentTable() {
 
 // Render Recent Attendance
 function renderRecentAttendance(teacherEmail = null) {
-    const recordsToShow = teacherEmail ? 
-        attendanceRecords.filter(r => r.teacher === teacherEmail).slice(0, 5) : 
+    const recordsToShow = teacherEmail ?
+        attendanceRecords.filter(r => r.teacher === teacherEmail).slice(0, 5) :
         attendanceRecords.slice(0, 5);
-    
+
     return `
         <div class="table-responsive">
             <table class="table table-striped table-hover">
@@ -537,8 +541,8 @@ function renderAttendancePage() {
                             </thead>
                             <tbody>
                                 ${currentAttendance.records.map((record, index) => {
-                                    const student = students.find(s => s.id === record.studentId);
-                                    return `
+        const student = students.find(s => s.id === record.studentId);
+        return `
                                         <tr class="animate__animated animate__fadeIn" style="animation-delay: ${index * 0.05}s">
                                             <td>${student?.roll || 'N/A'}</td>
                                             <td>${student?.name || 'Unknown Student'}</td>
@@ -551,7 +555,7 @@ function renderAttendancePage() {
                                             </td>
                                         </tr>
                                     `;
-                                }).join('')}
+    }).join('')}
                             </tbody>
                         </table>
                     </div>
@@ -565,9 +569,9 @@ function renderAttendancePage() {
 function toggleAttendanceStatus(button) {
     const studentId = button.getAttribute('data-student-id');
     const record = currentAttendance.records.find(r => r.studentId === studentId);
-    
+
     if (!record) return;
-    
+
     if (record.status === 'present') {
         record.status = 'absent';
         button.classList.remove('present');
@@ -579,11 +583,11 @@ function toggleAttendanceStatus(button) {
         button.classList.add('present');
         button.innerHTML = '<i class="fas fa-check"></i>';
     }
-    
+
     // Update counters
     const presentCount = currentAttendance.records.filter(r => r.status === 'present').length;
     const absentCount = currentAttendance.records.filter(r => r.status === 'absent').length;
-    
+
     document.querySelector('.badge.bg-success').innerHTML = `<i class="fas fa-check"></i> Present: ${presentCount}`;
     document.querySelector('.badge.bg-danger').innerHTML = `<i class="fas fa-times"></i> Absent: ${absentCount}`;
 }
@@ -604,10 +608,10 @@ function saveCurrentAttendance() {
         teacher: currentUser.email,
         records: currentAttendance.records
     };
-    
+
     attendanceRecords.push(attendanceRecord);
     saveAttendanceRecords();
-    
+
     showToast('Attendance saved successfully!', 'success');
     renderMainContent();
 }
@@ -616,19 +620,19 @@ function saveCurrentAttendance() {
 function viewAttendanceDetails(recordId) {
     const record = attendanceRecords.find(r => r.id === recordId);
     if (!record) return;
-    
+
     const presentStudents = record.records.filter(r => r.status === 'present').map(r => {
         const student = students.find(s => s.id === r.studentId);
         return student ? `${student.name} (${student.roll})` : 'Unknown Student';
     });
-    
+
     const absentStudents = record.records.filter(r => r.status === 'absent').map(r => {
         const student = students.find(s => s.id === r.studentId);
         return student ? `${student.name} (${student.roll})` : 'Unknown Student';
     });
-    
+
     const modalId = 'attendanceDetailsModal-' + recordId;
-    
+
     const modalHTML = `
         <div class="modal fade" id="${modalId}" tabindex="-1" aria-labelledby="${modalId}Label" aria-hidden="true">
             <div class="modal-dialog modal-lg">
@@ -664,16 +668,16 @@ function viewAttendanceDetails(recordId) {
             </div>
         </div>
     `;
-    
+
     // Add modal to container
     dynamicModalContainer.innerHTML = modalHTML;
-    
+
     // Show the modal
     const modal = new bootstrap.Modal(document.getElementById(modalId));
     modal.show();
-    
+
     // Remove modal from DOM after it's hidden
-    document.getElementById(modalId).addEventListener('hidden.bs.modal', function() {
+    document.getElementById(modalId).addEventListener('hidden.bs.modal', function () {
         dynamicModalContainer.innerHTML = '';
     });
 }
@@ -682,21 +686,21 @@ function viewAttendanceDetails(recordId) {
 function downloadAttendance(recordId) {
     const record = attendanceRecords.find(r => r.id === recordId);
     if (!record) return;
-    
+
     // Using jsPDF with autoTable plugin
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
-    
+
     // Title
     doc.setFontSize(18);
     doc.setTextColor(40);
     doc.text(`Attendance Report - ${record.subject}`, 14, 20);
-    
+
     // Details
     doc.setFontSize(12);
     doc.text(`Date: ${formatDate(record.date)}`, 14, 30);
     doc.text(`Teacher: ${record.teacher}`, 14, 36);
-    
+
     // Prepare data for the table
     const tableData = record.records.map(r => {
         const student = students.find(s => s.id === r.studentId);
@@ -707,7 +711,7 @@ function downloadAttendance(recordId) {
             status: r.status === 'present' ? 'Present' : 'Absent'
         };
     });
-    
+
     // AutoTable
     doc.autoTable({
         startY: 45,
@@ -731,14 +735,14 @@ function downloadAttendance(recordId) {
             2: { cellWidth: 20 },
             3: { cellWidth: 25 }
         },
-        didDrawPage: function(data) {
+        didDrawPage: function (data) {
             // Footer
             doc.setFontSize(10);
             doc.setTextColor(150);
             doc.text(`Generated on ${new Date().toLocaleDateString()}`, data.settings.margin.left, doc.internal.pageSize.height - 10);
         }
     });
-    
+
     // Save the PDF
     doc.save(`Attendance_${record.subject}_${formatDate(record.date, 'YYYY-MM-DD')}.pdf`);
 }
@@ -757,7 +761,7 @@ function formatDate(dateString, format = 'long') {
     if (format === 'YYYY-MM-DD') {
         return date.toISOString().split('T')[0];
     }
-    
+
     const options = { year: 'numeric', month: 'long', day: 'numeric' };
     return date.toLocaleDateString(undefined, options);
 }
@@ -767,11 +771,11 @@ function showToast(message, type = 'info') {
     // Remove any existing toasts
     const existingToasts = document.querySelectorAll('.toast-container');
     existingToasts.forEach(toast => toast.remove());
-    
+
     const toastContainer = document.createElement('div');
     toastContainer.className = 'toast-container position-fixed bottom-0 end-0 p-3';
     toastContainer.style.zIndex = '11';
-    
+
     const toastHTML = `
         <div class="toast show" role="alert" aria-live="assertive" aria-atomic="true">
             <div class="toast-header">
@@ -784,10 +788,10 @@ function showToast(message, type = 'info') {
             </div>
         </div>
     `;
-    
+
     toastContainer.innerHTML = toastHTML;
     document.body.appendChild(toastContainer);
-    
+
     // Auto-remove after 5 seconds
     setTimeout(() => {
         toastContainer.remove();
