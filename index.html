@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>JNTU-GV College Attendance System</title>
+    <title>College Attendance System</title>
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Font Awesome -->
@@ -16,265 +16,154 @@
 </head>
 
 <body class="light-mode">
-    <div class="container-fluid">
-        <!-- Header -->
-        <header
-            class="d-flex justify-content-between align-items-center py-3 mb-4 border-bottom animate__animated animate__fadeInDown">
-            <div class="d-flex align-items-center">
-                <i class="fas fa-user-graduate me-2 fs-3 text-primary logo-align"></i>
-                <h1 class="h4 mb-0">JNTU-GV College of Engineering Vizianagaram Attendance System</h1>
-            </div>
-            <div>
-                <button id="themeToggle" class="btn btn-sm btn-outline-secondary me-2">
-                    <i class="fas fa-moon"></i> Dark Mode
-                </button>
-                <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#loginModal">
-                    <i class="fas fa-sign-in-alt"></i> Login
-                </button>
-            </div>
-        </header>
-
-        <!-- Main Content -->
-        <div id="mainContent" class="animate__animated animate__fadeIn">
-            <!-- Welcome message when not logged in -->
-            <div class="jumbotron text-center py-5">
-                <h1 class="display-4">Welcome to Attendance System</h1>
-                <p class="lead">A modern solution for managing college attendance</p>
-                <hr class="my-4">
-                <p>Please login to access the system features</p>
-                <button class="btn btn-primary btn-lg" data-bs-toggle="modal" data-bs-target="#loginModal">
-                    <i class="fas fa-sign-in-alt"></i> Login
-                </button>
-            </div>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="#">
+                <i class="fas fa-calendar-check me-2"></i>Attendance System
+            </a>
+            <button id="themeToggle" class="btn btn-sm btn-outline-light ms-auto">
+                <i class="fas fa-moon"></i> Dark Mode
+            </button>
         </div>
+    </nav>
 
-        <!-- Login Modal -->
-        <div class="modal fade" id="loginModal" tabindex="-1" aria-labelledby="loginModalLabel" aria-hidden="true">
-            <div class="modal-dialog">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title" id="loginModalLabel">Login to System</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                    </div>
+    <!-- Toast Container -->
+    <div id="toastContainer" class="position-fixed bottom-0 end-0 p-3" style="z-index: 11"></div>
+
+    <!-- Modal Container -->
+    <div id="modalContainer"></div>
+
+    <!-- Main Content -->
+    <div class="container my-4">
+        <div id="mainContent"></div>
+    </div>
+
+    <!-- Login Modal -->
+    <div class="modal fade" id="loginModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Login to Attendance System</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form id="loginForm">
                     <div class="modal-body">
-                        <form id="loginForm">
-                            <div class="mb-3">
-                                <label for="loginEmail" class="form-label">Email address</label>
-                                <input type="email" class="form-control" id="loginEmail" required>
-                            </div>
-                            <div class="mb-3">
-                                <label for="loginPassword" class="form-label">Password</label>
-                                <input type="password" class="form-control" id="loginPassword" required>
-                            </div>
-                            <div class="mb-3 form-check">
-                                <input type="checkbox" class="form-check-input" id="rememberMe">
-                                <label class="form-check-label" for="rememberMe">Remember me</label>
-                            </div>
-                            <button type="submit" class="btn btn-primary w-100">Login</button>
-                        </form>
-                        <div class="text-center mt-3">
-                            <p class="mb-0">Demo Accounts:</p>
-                            <p class="mb-1"><small>Admin: admin@college.com / admin123</small></p>
-                            <p class="mb-0"><small>Teacher: teacher@college.com / teacher123</small></p>
+                        <div class="mb-3">
+                            <label for="loginType" class="form-label">Login As</label>
+                            <select class="form-select" id="loginType" required>
+                                <option value="">Select Role</option>
+                                <option value="admin">Admin</option>
+                                <option value="teacher">Teacher</option>
+                                <option value="student">Student</option>
+                            </select>
                         </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Add Student Modal -->
-        <div class="modal fade" id="addStudentModal" tabindex="-1" aria-labelledby="addStudentModalLabel"
-            aria-hidden="true">
-            <div class="modal-dialog">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title" id="addStudentModalLabel">Add New Student</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                    </div>
-                    <div class="modal-body">
-                        <form id="addStudentForm">
-                            <div class="mb-3">
-                                <label for="studentName" class="form-label">Full Name</label>
-                                <input type="text" class="form-control" id="studentName" required>
-                            </div>
-                            <div class="mb-3">
-                                <label for="studentRoll" class="form-label">Roll Number</label>
-                                <input type="text" class="form-control" id="studentRoll" required>
-                            </div>
-                            <div class="mb-3">
-                                <label for="studentSection" class="form-label">Section</label>
-                                <select class="form-select" id="studentSection" required>
-                                    <option value="">Select Section</option>
-                                    <option value="A">MCA</option>
-                                    <option value="B">MBA</option>
-                                    <option value="C">M-Tech</option>
-                                    <option value="D">B-Tech</option>
-                                </select>
-                            </div>
-                            <button type="submit" class="btn btn-primary w-100">Add Student</button>
-                        </form>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Select Date Modal -->
-        <div class="modal fade" id="selectDateModal" tabindex="-1" aria-labelledby="selectDateModalLabel"
-            aria-hidden="true">
-            <div class="modal-dialog">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title" id="selectDateModalLabel">Select Date for Attendance</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                    </div>
-                    <div class="modal-body">
-                        <form id="selectDateForm">
-                            <div class="mb-3">
-                                <label for="attendanceDate" class="form-label">Date</label>
-                                <input type="date" class="form-control" id="attendanceDate" required>
-                            </div>
-                            <div class="mb-3">
-                                <label for="attendanceSubject" class="form-label">Subject</label>
-                                <select class="form-select" id="attendanceSubject" required>
-                                    <option value="">Select Subject</option>
-                                    <option value="Mathematics">Data Structres</option>
-                                    <option value="Physics">Database management System</option>
-                                    <option value="Chemistry">Design and analysis and algorithm</option>
-                                    <option value="Computer Science">Computer Science</option>
-                                    <option value="English">Java</option>
-                                </select>
-                            </div>
-                            <button type="submit" class="btn btn-primary w-100">Proceed</button>
-                        </form>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Bulk Upload Modal - Improved Version -->
-        <div class="modal fade" id="bulkUploadModal" tabindex="-1" aria-hidden="true">
-            <div class="modal-dialog modal-lg">
-                <div class="modal-content">
-                    <div class="modal-header bg-primary text-white">
-                        <h5 class="modal-title">
-                            <i class="fas fa-users-class me-2"></i>Bulk Student Upload
-                        </h5>
-                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
-                            aria-label="Close"></button>
-                    </div>
-                    <div class="modal-body">
-                        <div class="alert alert-info">
-                            <i class="fas fa-info-circle me-2"></i>
-                            Upload a CSV or Excel file containing student data. Ensure the file follows the required
-                            format.
+                        <div class="mb-3">
+                            <label for="loginEmail" class="form-label">Email address</label>
+                            <input type="email" class="form-control" id="loginEmail" required>
                         </div>
-
-                        <form id="bulkUploadForm" class="needs-validation" novalidate>
-                            <div class="mb-4">
-                                <div class="file-upload-wrapper">
-                                    <label for="studentFile" class="form-label fw-bold">Select File</label>
-                                    <input type="file" id="studentFile" class="form-control file-upload-input"
-                                        accept=".csv,.xlsx,.xls" required>
-                                    <div class="invalid-feedback">Please select a valid file</div>
-                                </div>
-                            </div>
-
-                            <div class="row g-3 mb-4">
-                                <div class="col-md-6">
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" id="overwriteExisting" checked>
-                                        <label class="form-check-label" for="overwriteExisting">
-                                            Overwrite existing records
-                                        </label>
-                                    </div>
-                                </div>
-                                <div class="col-md-6 text-end">
-                                    <a href="/templates/student_upload_template.csv" id="downloadTemplate"
-                                        class="btn btn-sm btn-outline-secondary">
-                                        <i class="fas fa-file-download me-1"></i>Download Template
-                                    </a>
-                                </div>
-                            </div>
-
-                            <div class="upload-progress d-none mb-3">
-                                <div class="d-flex justify-content-between mb-1">
-                                    <span>Uploading...</span>
-                                    <span class="progress-percent">0%</span>
-                                </div>
-                                <div class="progress" style="height: 10px;">
-                                    <div class="progress-bar progress-bar-striped progress-bar-animated"
-                                        role="progressbar" style="width: 0%"></div>
-                                </div>
-                            </div>
-
-                            <div class="d-grid gap-2">
-                                <button type="submit" class="btn btn-primary btn-lg" id="uploadBtn">
-                                    <i class="fas fa-cloud-upload-alt me-2"></i>Upload Students
-                                </button>
-                            </div>
-                        </form>
-
-                        <div class="upload-results mt-4 d-none">
-                            <div class="alert alert-success">
-                                <i class="fas fa-check-circle me-2"></i>
-                                <span class="result-message">Upload successful!</span>
-                            </div>
-                            <div class="card">
-                                <div class="card-body">
-                                    <h6 class="card-title">Upload Summary</h6>
-                                    <ul class="list-group list-group-flush">
-                                        <li class="list-group-item d-flex justify-content-between">
-                                            <span>Total Records:</span>
-                                            <span class="fw-bold total-records">0</span>
-                                        </li>
-                                        <li class="list-group-item d-flex justify-content-between">
-                                            <span>Successfully Added:</span>
-                                            <span class="fw-bold text-success added-count">0</span>
-                                        </li>
-                                        <li class="list-group-item d-flex justify-content-between">
-                                            <span>Updated:</span>
-                                            <span class="fw-bold text-warning updated-count">0</span>
-                                        </li>
-                                        <li class="list-group-item d-flex justify-content-between">
-                                            <span>Errors:</span>
-                                            <span class="fw-bold text-danger error-count">0</span>
-                                        </li>
-                                    </ul>
-                                </div>
-                            </div>
-                            <div class="error-details mt-3 d-none">
-                                <button class="btn btn-sm btn-outline-danger toggle-errors">
-                                    <i class="fas fa-exclamation-triangle me-1"></i>View Error Details
-                                </button>
-                                <div class="error-list mt-2 collapse"></div>
-                            </div>
+                        <div class="mb-3">
+                            <label for="loginPassword" class="form-label">Password</label>
+                            <input type="password" class="form-control" id="loginPassword" required>
+                        </div>
+                        <div class="mb-3 form-check">
+                            <input type="checkbox" class="form-check-input" id="rememberMe">
+                            <label class="form-check-label" for="rememberMe">Remember me</label>
                         </div>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
-                            Close
-                        </button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <button type="submit" class="btn btn-primary">Login</button>
                     </div>
-                </div>
+                </form>
             </div>
         </div>
+    </div>
+    <!-- Add Student Modal -->
+    <div class="modal fade" id="addStudentModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Add New Student</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form id="addStudentForm">
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="studentName" class="form-label">Student Name</label>
+                            <input type="text" class="form-control" id="studentName" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="studentRoll" class="form-label">Roll Number</label>
+                            <input type="text" class="form-control" id="studentRoll" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="studentSection" class="form-label">Section</label>
+                            <select class="form-select" id="studentSection" required>
+                                <option value="">Select Section</option>
+                                <option value="MCA">MCA</option>
+                                <option value="MBA">MBA</option>
+                                <option value="M-Tech">M-Tech</option>
+                                <option value="B-Tech">B-Tech</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <button type="submit" class="btn btn-primary">Add Student</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
 
-        <!-- Attendance Details Modal (Dynamic) -->
-        <div id="dynamicModalContainer"></div>
-
-
-        <!-- Footer -->
-        <footer class="mt-5 pt-4 pb-2 border-top text-center animate__animated animate__fadeInUp">
-            <p class="text-muted">© 2023 College Attendance System. All rights reserved.</p>
-        </footer>
+    <!-- Select Date Modal -->
+    <div class="modal fade" id="selectDateModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Take Attendance</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form id="selectDateForm">
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="attendanceDate" class="form-label">Date</label>
+                            <input type="date" class="form-control" id="attendanceDate" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="attendanceSubject" class="form-label">Subject</label>
+                            <select class="form-select" id="attendanceSubject" required>
+                                <option value="">Select Subject</option>
+                                <option value="Data Structures">Data Structures</option>
+                                <option value="Database management System">DBMS</option>
+                                <option value="Design and analysis and algorithm">DAA</option>
+                                <option value="Computer Science">Computer Science</option>
+                                <option value="Java">Java</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="attendanceSection" class="form-label">Section</label>
+                            <select class="form-select" id="attendanceSection" required>
+                                <option value="">Select Section</option>
+                                <option value="MCA">MCA</option>
+                                <option value="MBA">MBA</option>
+                                <option value="M-Tech">M-Tech</option>
+                                <option value="B-Tech">B-Tech</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <button type="submit" class="btn btn-primary">Continue</button>
+                    </div>
+                </form>
+            </div>
+        </div>
     </div>
 
     <!-- Bootstrap JS Bundle with Popper -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <!-- jsPDF -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <!-- Custom JS -->
     <script src="script.js"></script>
 </body>

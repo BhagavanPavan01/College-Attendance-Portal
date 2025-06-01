@@ -1,309 +1,305 @@
-// Initialize variables
-let currentUser = null;
-let students = JSON.parse(localStorage.getItem('students')) || [];
-let attendanceRecords = JSON.parse(localStorage.getItem('attendanceRecords')) || [];
-let currentAttendance = {
-    date: '',
-    subject: '',
-    records: []
-};
-
-// DOM Elements
-const themeToggle = document.getElementById('themeToggle');
-const loginForm = document.getElementById('loginForm');
-const addStudentForm = document.getElementById('addStudentForm');
-const selectDateForm = document.getElementById('selectDateForm');
-const mainContent = document.getElementById('mainContent');
-const dynamicModalContainer = document.getElementById('dynamicModalContainer');
-
-// Initialize the app
-document.addEventListener('DOMContentLoaded', function () {
-    // Set default date for attendance date picker to today
-    document.getElementById('attendanceDate')?.setAttribute('value', new Date().toISOString().split('T')[0]);
-
-    checkRememberedUser();
-    renderMainContent();
-    setupEventListeners();
-
-    // Initialize tooltips
-    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-    tooltipTriggerList.map(function (tooltipTriggerEl) {
-        return new bootstrap.Tooltip(tooltipTriggerEl);
-    });
-});
-
-// Event Listeners
-function setupEventListeners() {
-    themeToggle.addEventListener('click', toggleTheme);
-    if (loginForm) loginForm.addEventListener('submit', handleLogin);
-    if (addStudentForm) addStudentForm.addEventListener('submit', handleAddStudent);
-    if (selectDateForm) selectDateForm.addEventListener('submit', handleSelectDate);
-
-    // Dynamic event listeners for elements that might be added later
-    document.addEventListener('click', function (e) {
-        // Delete student
-        if (e.target.closest('.delete-student')) {
-            const button = e.target.closest('.delete-student');
-            const studentId = button.getAttribute('data-id');
-            deleteStudent(studentId);
-        }
-
-        // View attendance details
-        if (e.target.closest('.view-attendance')) {
-            const button = e.target.closest('.view-attendance');
-            const recordId = button.getAttribute('data-id');
-            viewAttendanceDetails(recordId);
-        }
-
-        // Download attendance
-        if (e.target.closest('.download-attendance')) {
-            const button = e.target.closest('.download-attendance');
-            const recordId = button.getAttribute('data-id');
-            downloadAttendance(recordId);
-        }
-
-        // Status buttons in attendance taking
-        if (e.target.closest('.status-btn')) {
-            const button = e.target.closest('.status-btn');
-            toggleAttendanceStatus(button);
-        }
-
-        // Back to dashboard button
-        if (e.target.closest('#backToDashboard')) {
-            confirmLeaveAttendance();
-        }
-
-        // Save attendance button
-        if (e.target.closest('#saveAttendance')) {
-            saveCurrentAttendance();
-        }
-
-        // Logout button
-        if (e.target.closest('#logoutBtn')) {
-            handleLogout();
-        }
-    });
-}
-
-// Theme Toggle
-function toggleTheme() {
-    document.body.classList.toggle('dark-mode');
-    document.body.classList.toggle('light-mode');
-
-    if (document.body.classList.contains('dark-mode')) {
-        themeToggle.innerHTML = '<i class="fas fa-sun"></i> Light Mode';
-        localStorage.setItem('theme', 'dark');
-    } else {
-        themeToggle.innerHTML = '<i class="fas fa-moon"></i> Dark Mode';
-        localStorage.setItem('theme', 'light');
-    }
-}
-
-// Check Remembered User
-function checkRememberedUser() {
-    const rememberedUser = localStorage.getItem('rememberedUser');
-    if (rememberedUser) {
-        currentUser = JSON.parse(rememberedUser);
-    }
-
-    // Check for saved theme preference
-    const savedTheme = localStorage.getItem('theme') || 'light';
-    if (savedTheme === 'dark') {
-        document.body.classList.add('dark-mode');
-        document.body.classList.remove('light-mode');
-        themeToggle.innerHTML = '<i class="fas fa-sun"></i> Light Mode';
-    }
-}
-
-// Handle Login
-function handleLogin(e) {
-    e.preventDefault();
-
-    const email = document.getElementById('loginEmail').value;
-    const password = document.getElementById('loginPassword').value;
-    const rememberMe = document.getElementById('rememberMe').checked;
-
-    // Show loading state
-    const submitButton = e.target.querySelector('button[type="submit"]');
-    const originalText = submitButton.innerHTML;
-    submitButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Logging in...';
-    submitButton.disabled = true;
-
-    // Simulate API call with timeout
-    setTimeout(() => {
-        // Demo authentication (in a real app, this would be server-side)
-        if ((email === 'admin@college.com' && password === 'admin123') ||
-            (email === 'teacher@college.com' && password === 'teacher123')) {
-
-            currentUser = {
-                email,
-                role: email === 'admin@college.com' ? 'admin' : 'teacher'
-            };
-
-            if (rememberMe) {
-                localStorage.setItem('rememberedUser', JSON.stringify(currentUser));
-            } else {
-                localStorage.removeItem('rememberedUser');
-            }
-
-            // Close the modal
-            const loginModal = bootstrap.Modal.getInstance(document.getElementById('loginModal'));
-            loginModal.hide();
-
-            // Clear form
-            loginForm.reset();
-
-            // Update UI
-            renderMainContent();
-
-            // Show welcome toast
-            showToast(`Welcome back, ${currentUser.role === 'admin' ? 'Admin' : 'Teacher'}!`, 'success');
-        } else {
-            showToast('Invalid credentials. Please try again.', 'danger');
-        }
-
-        // Reset button state
-        submitButton.innerHTML = originalText;
-        submitButton.disabled = false;
-    }, 1000);
-}
-
-// Handle Add Student
-function handleAddStudent(e) {
-    e.preventDefault();
-
-    const name = document.getElementById('studentName').value.trim();
-    const roll = document.getElementById('studentRoll').value.trim();
-    const section = document.getElementById('studentSection').value;
-
-    // Validate inputs
-    if (!name || !roll || !section) {
-        showToast('Please fill all fields', 'warning');
-        return;
-    }
-
-    // Check if roll number already exists
-    if (students.some(student => student.roll === roll)) {
-        showToast('Student with this roll number already exists!', 'danger');
-        return;
-    }
-
-    const newStudent = {
-        id: Date.now().toString(),
-        name,
-        roll,
-        section
+// Main Application
+const AttendanceSystem = (function () {
+    // State
+    let currentUser = null;
+    let students = JSON.parse(localStorage.getItem('students')) || [];
+    let attendanceRecords = JSON.parse(localStorage.getItem('attendanceRecords')) || [];
+    let currentAttendance = {
+        date: '',
+        subject: '',
+        records: []
     };
 
-    students.push(newStudent);
-    saveStudents();
+    // DOM Elements
+    const elements = {
+        themeToggle: document.getElementById('themeToggle'),
+        mainContent: document.getElementById('mainContent'),
+        modalContainer: document.getElementById('modalContainer')
+    };
 
-    // Close the modal
-    const addStudentModal = bootstrap.Modal.getInstance(document.getElementById('addStudentModal'));
-    addStudentModal.hide();
-
-    // Clear form
-    addStudentForm.reset();
-
-    // Update UI
-    renderMainContent();
-
-    // Show success message
-    showToast('Student added successfully!', 'success');
-
-    // If we're on the attendance page, refresh it
-    if (document.getElementById('attendancePage')) {
-        renderAttendancePage();
-    }
-}
-
-// Handle Select Date
-function handleSelectDate(e) {
-    e.preventDefault();
-
-    const date = document.getElementById('attendanceDate').value;
-    const subject = document.getElementById('attendanceSubject').value;
-
-    if (!date || !subject) {
-        showToast('Please select both date and subject', 'warning');
-        return;
-    }
-
-    currentAttendance.date = date;
-    currentAttendance.subject = subject;
-    currentAttendance.records = [];
-
-    // Initialize attendance records for all students
-    students.forEach(student => {
-        currentAttendance.records.push({
-            studentId: student.id,
-            status: 'present' // default to present
-        });
-    });
-
-    // Close the modal
-    const selectDateModal = bootstrap.Modal.getInstance(document.getElementById('selectDateModal'));
-    selectDateModal.hide();
-
-    // Clear form
-    selectDateForm.reset();
-
-    // Render attendance page
-    renderAttendancePage();
-
-    // Show instruction toast
-    showToast('Click on status buttons to mark students present/absent', 'info');
-}
-
-// Delete Student
-function deleteStudent(studentId) {
-    if (confirm('Are you sure you want to delete this student? This action cannot be undone.')) {
-        students = students.filter(student => student.id !== studentId);
-        saveStudents();
+    // Initialize the application
+    function init() {
+        setupEventListeners();
+        checkRememberedUser();
         renderMainContent();
-        showToast('Student deleted successfully', 'success');
+        setDefaultDates();
     }
-}
 
-// Save Students to Local Storage
-function saveStudents() {
-    localStorage.setItem('students', JSON.stringify(students));
-}
-
-// Save Attendance Records to Local Storage
-function saveAttendanceRecords() {
-    localStorage.setItem('attendanceRecords', JSON.stringify(attendanceRecords));
-}
-
-// Render Main Content based on login state
-function renderMainContent() {
-    if (!currentUser) {
-        renderLoggedOutView();
-    } else if (currentUser.role === 'admin') {
-        renderAdminDashboard();
-    } else {
-        renderTeacherDashboard();
+    // Set default dates for date inputs
+    function setDefaultDates() {
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('attendanceDate')?.setAttribute('value', today);
+        document.getElementById('filterDate')?.setAttribute('value', today);
     }
-}
 
-// Render Logged Out View
-function renderLoggedOutView() {
-    mainContent.innerHTML = `
-        <div class="jumbotron text-center py-5 animate__animated animate__fadeIn">
-            <h1 class="display-4">Welcome to Attendance System</h1>
-            <p class="lead">A modern solution for managing college attendance</p>
-            <hr class="my-4">
-            <p>Please login to access the system features</p>
-            <button class="btn btn-primary btn-lg animate-hover" data-bs-toggle="modal" data-bs-target="#loginModal">
-                <i class="fas fa-sign-in-alt"></i> Login
-            </button>
-        </div>
-    `;
-}
+    // Setup event listeners
+    function setupEventListeners() {
+        // Theme toggle
+        elements.themeToggle?.addEventListener('click', toggleTheme);
 
-// Render Admin Dashboard
-function renderAdminDashboard() {
-    mainContent.innerHTML = `
+        // Form submissions
+        document.getElementById('loginForm')?.addEventListener('submit', handleLogin);
+        document.getElementById('addStudentForm')?.addEventListener('submit', handleAddStudent);
+        document.getElementById('selectDateForm')?.addEventListener('submit', handleSelectDate);
+
+        // Single event listener for all click events
+        document.addEventListener('click', function (e) {
+            // View attendance
+            if (e.target.closest('.view-attendance')) {
+                const recordId = e.target.closest('.view-attendance').dataset.id;
+                viewAttendanceDetails(recordId);
+            }
+
+            // Download attendance
+            if (e.target.closest('.download-attendance')) {
+                const recordId = e.target.closest('.download-attendance').dataset.id;
+                downloadAttendance(recordId);
+            }
+
+            // Status buttons
+            if (e.target.closest('.status-btn')) {
+                const button = e.target.closest('.status-btn');
+                toggleAttendanceStatus(button);
+            }
+
+            // Back to dashboard
+            if (e.target.closest('#backToDashboard')) {
+                confirmLeaveAttendance();
+            }
+
+            // Save attendance
+            if (e.target.closest('#saveAttendance')) {
+                saveCurrentAttendance();
+            }
+
+            // Logout
+            if (e.target.closest('#logoutBtn')) {
+                handleLogout();
+            }
+
+            // Apply filters
+            if (e.target.closest('#applyFilters')) {
+                applyFilters();
+            }
+
+            // Reset filters
+            if (e.target.closest('#resetFilters')) {
+                resetFilters();
+            }
+
+            // View filtered attendance
+            if (e.target.closest('.view-filtered-attendance')) {
+                const button = e.target.closest('.view-filtered-attendance');
+                viewFilteredAttendance(
+                    button.dataset.date,
+                    button.dataset.subject,
+                    button.dataset.section
+                );
+            }
+
+            // Download filtered attendance
+            if (e.target.closest('.download-filtered-attendance')) {
+                const button = e.target.closest('.download-filtered-attendance');
+                downloadFilteredAttendance(
+                    button.dataset.date,
+                    button.dataset.subject,
+                    button.dataset.section
+                );
+            }
+
+            // Delete attendance record
+            if (e.target.closest('.delete-attendance')) {
+                const recordId = e.target.closest('.delete-attendance').dataset.id;
+                deleteAttendanceRecord(recordId);
+            }
+
+            // Edit attendance record
+            if (e.target.closest('.edit-attendance')) {
+                const recordId = e.target.closest('.edit-attendance').dataset.id;
+                editAttendanceRecord(recordId);
+            }
+
+            // Section card click (filter students by section)
+            if (e.target.closest('.section-card')) {
+                const section = e.target.closest('.section-card').dataset.section;
+                document.getElementById('studentsTableContainer').innerHTML = renderStudentTable(section);
+
+                // Highlight active card
+                document.querySelectorAll('.section-card').forEach(card => {
+                    card.classList.remove('active-section');
+                });
+                e.target.closest('.section-card').classList.add('active-section');
+            }
+
+            // Show all students button
+            if (e.target.closest('#showAllStudents')) {
+                document.getElementById('studentsTableContainer').innerHTML = renderStudentTable();
+                document.querySelectorAll('.section-card').forEach(card => {
+                    card.classList.remove('active-section');
+                });
+            }
+
+            // Delete student
+            if (e.target.closest('.delete-student')) {
+                const studentId = e.target.closest('.delete-student').dataset.id;
+                deleteStudent(studentId);
+            }
+        });
+    }
+
+    // Theme toggle
+    function toggleTheme() {
+        document.body.classList.toggle('dark-mode');
+        document.body.classList.toggle('light-mode');
+
+        if (document.body.classList.contains('dark-mode')) {
+            elements.themeToggle.innerHTML = '<i class="fas fa-sun"></i> Light Mode';
+            localStorage.setItem('theme', 'dark');
+        } else {
+            elements.themeToggle.innerHTML = '<i class="fas fa-moon"></i> Dark Mode';
+            localStorage.setItem('theme', 'light');
+        }
+    }
+
+    // Check remembered user
+    function checkRememberedUser() {
+        const rememberedUser = localStorage.getItem('rememberedUser');
+        if (rememberedUser) {
+            currentUser = JSON.parse(rememberedUser);
+        }
+
+        // Check theme preference
+        const savedTheme = localStorage.getItem('theme') || 'light';
+        if (savedTheme === 'dark') {
+            document.body.classList.add('dark-mode');
+            document.body.classList.remove('light-mode');
+            elements.themeToggle.innerHTML = '<i class="fas fa-sun"></i> Light Mode';
+        }
+    }
+
+    // Handle login
+    // Handle login
+    function handleLogin(e) {
+        e.preventDefault();
+
+        const loginType = document.getElementById('loginType').value;
+        const email = document.getElementById('loginEmail').value;
+        const password = document.getElementById('loginPassword').value;
+        const rememberMe = document.getElementById('rememberMe').checked;
+
+        // Show loading state
+        const submitButton = e.target.querySelector('button[type="submit"]');
+        const originalText = submitButton.innerHTML;
+        submitButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Logging in...';
+        submitButton.disabled = true;
+
+        // Simulate API call
+        setTimeout(() => {
+            try {
+                if (!loginType) {
+                    throw new Error('Please select a login type');
+                }
+
+                let isValid = false;
+                let role = '';
+
+                // Check credentials based on login type
+                switch (loginType) {
+                    case 'admin':
+                        if (email === 'admin@college.com' && password === 'admin123') {
+                            isValid = true;
+                            role = 'admin';
+                        }
+                        break;
+                    case 'teacher':
+                        if (email === 'teacher@college.com' && password === 'teacher123') {
+                            isValid = true;
+                            role = 'teacher';
+                        }
+                        break;
+                    case 'student':
+                        // Check if student exists (you would typically check against student records)
+                        const student = students.find(s => s.email === email && s.roll === password);
+                        if (student) {
+                            isValid = true;
+                            role = 'student';
+                        }
+                        break;
+                }
+
+                if (isValid) {
+                    currentUser = {
+                        email,
+                        role
+                    };
+
+                    if (rememberMe) {
+                        localStorage.setItem('rememberedUser', JSON.stringify(currentUser));
+                    } else {
+                        localStorage.removeItem('rememberedUser');
+                    }
+
+                    // Close modal and reset form
+                    const loginModal = bootstrap.Modal.getInstance(document.getElementById('loginModal'));
+                    loginModal.hide();
+                    e.target.reset();
+
+                    // Update UI
+                    renderMainContent();
+                    showToast(`Welcome back, ${role.charAt(0).toUpperCase() + role.slice(1)}!`, 'success');
+                } else {
+                    throw new Error('Invalid credentials for selected role');
+                }
+            } catch (error) {
+                showToast(error.message, 'danger');
+            } finally {
+                submitButton.innerHTML = originalText;
+                submitButton.disabled = false;
+            }
+        }, 1000);
+    }
+    // Handle logout
+    function handleLogout() {
+        currentUser = null;
+        localStorage.removeItem('rememberedUser');
+        renderMainContent();
+        showToast('Logged out successfully', 'info');
+    }
+
+    // Render main content based on login state
+    function renderMainContent() {
+        if (!currentUser) {
+            renderLoggedOutView();
+        } else if (currentUser.role === 'admin') {
+            renderAdminDashboard();
+        } else if (currentUser.role === 'teacher') {
+            renderTeacherDashboard();
+        } else if (currentUser.role === 'student') {
+            renderStudentDashboard();
+        }
+    }
+
+    // Render logged out view
+    function renderLoggedOutView() {
+        elements.mainContent.innerHTML = `
+            <div class="jumbotron text-center py-5 animate__animated animate__fadeIn">
+                <h1 class="display-4">Welcome to Attendance System</h1>
+                <p class="lead">A modern solution for managing college attendance</p>
+                <hr class="my-4">
+                <p>Please login to access the system features</p>
+                <button class="btn btn-primary btn-lg animate-hover" data-bs-toggle="modal" data-bs-target="#loginModal">
+                    <i class="fas fa-sign-in-alt"></i> Login
+                </button>
+            </div>
+        `;
+    }
+
+    // Render admin dashboard
+    // Render admin dashboard with section cards and delete options
+    function renderAdminDashboard() {
+        const sections = [...new Set(students.map(s => s.section))];
+
+        elements.mainContent.innerHTML = `
         <div class="row mb-4 animate__animated animate__fadeIn">
             <div class="col-md-6">
                 <h2><i class="fas fa-tachometer-alt me-2"></i>Admin Dashboard</h2>
@@ -320,7 +316,7 @@ function renderAdminDashboard() {
         
         <div class="row mb-4 animate__animated animate__fadeInUp">
             <div class="col-md-4 mb-3">
-                <div class="card admin-card text-white bg-primary h-100">
+                <div class="card text-white bg-primary h-100">
                     <div class="card-body">
                         <h5 class="card-title"><i class="fas fa-users me-2"></i>Total Students</h5>
                         <p class="card-text display-4">${students.length}</p>
@@ -328,7 +324,7 @@ function renderAdminDashboard() {
                 </div>
             </div>
             <div class="col-md-4 mb-3">
-                <div class="card admin-card text-white bg-success h-100">
+                <div class="card text-white bg-success h-100">
                     <div class="card-body">
                         <h5 class="card-title"><i class="fas fa-calendar-check me-2"></i>Attendance Records</h5>
                         <p class="card-text display-4">${attendanceRecords.length}</p>
@@ -336,21 +332,42 @@ function renderAdminDashboard() {
                 </div>
             </div>
             <div class="col-md-4 mb-3">
-                <div class="card admin-card text-white bg-info h-100">
+                <div class="card text-white bg-info h-100">
                     <div class="card-body">
                         <h5 class="card-title"><i class="fas fa-chart-pie me-2"></i>Sections</h5>
-                        <p class="card-text display-4">${new Set(students.map(s => s.section)).size}</p>
+                        <p class="card-text display-4">${sections.length}</p>
                     </div>
                 </div>
             </div>
         </div>
         
         <div class="card mb-4 animate__animated animate__fadeInUp">
-            <div class="card-header">
-                <h5 class="mb-0"><i class="fas fa-list me-2"></i>Student List</h5>
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="fas fa-users me-2"></i>Students by Section</h5>
+                <button class="btn btn-sm btn-outline-primary" id="showAllStudents">
+                    Show All Students
+                </button>
             </div>
             <div class="card-body">
-                ${students.length > 0 ? renderStudentTable() : '<p class="text-muted">No students added yet.</p>'}
+                <div class="row mb-4" id="sectionCardsContainer">
+                    ${sections.map(section => {
+            const sectionStudents = students.filter(s => s.section === section);
+            return `
+                            <div class="col-md-3 mb-3">
+                                <div class="card section-card animate-hover" data-section="${section}">
+                                    <div class="card-body text-center">
+                                        <h5 class="card-title">${section}</h5>
+                                        <p class="display-6">${sectionStudents.length}</p>
+                                        <p class="text-muted">Students</p>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+        }).join('')}
+                </div>
+                <div id="studentsTableContainer">
+                    ${students.length > 0 ? renderStudentTable() : '<p class="text-muted">No students added yet.</p>'}
+                </div>
             </div>
         </div>
         
@@ -363,17 +380,144 @@ function renderAdminDashboard() {
             </div>
         </div>
 
-        <button class="btn btn-info me-2 animate-hover" data-bs-toggle="modal" data-bs-target="#bulkUploadModal">
-            <i class="fas fa-file-import me-1"></i> Bulk Upload
-        </button>
+        <div class="card animate__animated animate__fadeInUp mt-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-filter me-2"></i>Filter Attendance Records</h5>
+            </div>
+            <div class="card-body">
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <label class="form-label">Section</label>
+                        <select class="form-select" id="filterSection">
+                            <option value="">All Sections</option>
+                            ${sections.map(section => `
+                                <option value="${section}">${section}</option>
+                            `).join('')}
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Subject</label>
+                        <select class="form-select" id="filterSubject">
+                            <option value="">All Subjects</option>
+                            <option value="Data Structures">Data Structures</option>
+                            <option value="Database management System">DBMS</option>
+                            <option value="Design and analysis and algorithm">DAA</option>
+                            <option value="Computer Science">Computer Science</option>
+                            <option value="Java">Java</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Date</label>
+                        <input type="date" class="form-control" id="filterDate">
+                    </div>
+                </div>
+                <button id="applyFilters" class="btn btn-primary me-2">
+                    <i class="fas fa-filter me-1"></i> Apply Filters
+                </button>
+                <button id="resetFilters" class="btn btn-outline-secondary">
+                    <i class="fas fa-undo me-1"></i> Reset
+                </button>
+                
+                <div id="filterLoading" class="text-center py-4 d-none">
+                    <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-2">Processing filters...</p>
+                </div>
+                
+                <div id="filteredResults" class="mt-4"></div>
+            </div>
+        </div>
     `;
-}
+    }
 
-// Render Teacher Dashboard
-function renderTeacherDashboard() {
-    const teacherRecords = attendanceRecords.filter(r => r.teacher === currentUser.email);
+    // Render student table with delete options
+    function renderStudentTable(filterSection = null) {
+        const filteredStudents = filterSection
+            ? students.filter(s => s.section === filterSection)
+            : students;
 
-    mainContent.innerHTML = `
+        if (filteredStudents.length === 0) {
+            return '<p class="text-muted">No students found</p>';
+        }
+
+        return `
+        <div class="table-responsive">
+            <table class="table table-striped table-hover">
+                <thead>
+                    <tr>
+                        <th>Roll No.</th>
+                        <th>Name</th>
+                        <th>Section</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${filteredStudents.map(student => `
+                        <tr>
+                            <td>${student.roll}</td>
+                            <td>${student.name}</td>
+                            <td>${student.section}</td>
+                            <td>
+                                <button class="btn btn-sm btn-outline-danger delete-student" 
+                                        data-id="${student.id}" title="Delete Student">
+                                    <i class="fas fa-trash-alt"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        </div>
+    `;
+    }
+
+    // Delete student function
+    function deleteStudent(studentId) {
+        if (confirm('Are you sure you want to delete this student?')) {
+            students = students.filter(student => student.id !== studentId);
+            saveStudents();
+            renderMainContent();
+            showToast('Student deleted successfully', 'success');
+        }
+    }
+
+    // Add to setupEventListeners:
+    document.addEventListener('click', function (e) {
+        // Section card click
+        if (e.target.closest('.section-card')) {
+            const section = e.target.closest('.section-card').dataset.section;
+            document.getElementById('studentsTableContainer').innerHTML = renderStudentTable(section);
+
+            // Highlight active card
+            document.querySelectorAll('.section-card').forEach(card => {
+                card.classList.remove('active-section');
+            });
+            e.target.closest('.section-card').classList.add('active-section');
+        }
+
+        // Show all students
+        if (e.target.closest('#showAllStudents')) {
+            document.getElementById('studentsTableContainer').innerHTML = renderStudentTable();
+            document.querySelectorAll('.section-card').forEach(card => {
+                card.classList.remove('active-section');
+            });
+        }
+
+        // Delete student
+        if (e.target.closest('.delete-student')) {
+            const studentId = e.target.closest('.delete-student').dataset.id;
+            deleteStudent(studentId);
+        }
+    });
+
+    // Render teacher dashboard
+    // Render teacher dashboard with section-wise students
+    function renderTeacherDashboard() {
+        const teacherRecords = attendanceRecords.filter(r => r.teacher === currentUser.email);
+        const sectionsTaught = [...new Set(teacherRecords.map(r => r.section))];
+
+        elements.mainContent.innerHTML = `
         <div class="row mb-4 animate__animated animate__fadeIn">
             <div class="col-md-6">
                 <h2><i class="fas fa-chalkboard-teacher me-2"></i>Teacher Dashboard</h2>
@@ -390,7 +534,7 @@ function renderTeacherDashboard() {
         
         <div class="row mb-4 animate__animated animate__fadeInUp">
             <div class="col-md-6 mb-3">
-                <div class="card admin-card text-white bg-primary h-100">
+                <div class="card text-white bg-primary h-100">
                     <div class="card-body">
                         <h5 class="card-title"><i class="fas fa-users me-2"></i>Total Students</h5>
                         <p class="card-text display-4">${students.length}</p>
@@ -398,7 +542,7 @@ function renderTeacherDashboard() {
                 </div>
             </div>
             <div class="col-md-6 mb-3">
-                <div class="card admin-card text-white bg-success h-100">
+                <div class="card text-white bg-success h-100">
                     <div class="card-body">
                         <h5 class="card-title"><i class="fas fa-calendar-check me-2"></i>Your Records</h5>
                         <p class="card-text display-4">${teacherRecords.length}</p>
@@ -407,24 +551,834 @@ function renderTeacherDashboard() {
             </div>
         </div>
         
+        ${sectionsTaught.map(section => `
+            <div class="card mb-4 animate__animated animate__fadeInUp">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-users me-2"></i>${section} Section Students</h5>
+                </div>
+                <div class="card-body">
+                    ${renderSectionStudents(section)}
+                </div>
+            </div>
+        `).join('')}
+        
         <div class="card animate__animated animate__fadeInUp">
             <div class="card-header">
                 <h5 class="mb-0"><i class="fas fa-history me-2"></i>Your Recent Attendance</h5>
             </div>
             <div class="card-body">
-                ${teacherRecords.length > 0 ?
-            renderRecentAttendance(currentUser.email) :
-            '<p class="text-muted">No attendance records yet.</p>'}
+                ${teacherRecords.length > 0 ? renderRecentAttendance(teacherRecords.slice(0, 5), false) : '<p class="text-muted">No attendance records yet.</p>'}
             </div>
         </div>
     `;
-}
+    }
 
-// Render Student Table
-function renderStudentTable() {
-    return `
+    // Helper function to render students by section
+    function renderSectionStudents(section) {
+        const sectionStudents = students.filter(student => student.section === section);
+
+        if (sectionStudents.length === 0) {
+            return '<p class="text-muted">No students in this section.</p>';
+        }
+
+        return `
         <div class="table-responsive">
             <table class="table table-striped table-hover">
+                <thead>
+                    <tr>
+                        <th>Roll No.</th>
+                        <th>Name</th>
+                        <th>Attendance Percentage</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${sectionStudents.map(student => {
+            const studentRecords = attendanceRecords.filter(record =>
+                record.section === section &&
+                record.records.some(r => r.studentId === student.id)
+            );
+
+            const presentCount = studentRecords.reduce((count, record) => {
+                const studentRecord = record.records.find(r => r.studentId === student.id);
+                return count + (studentRecord?.status === 'present' ? 1 : 0);
+            }, 0);
+
+            const percentage = studentRecords.length > 0
+                ? Math.round((presentCount / studentRecords.length) * 100)
+                : 0;
+
+            return `
+                            <tr>
+                                <td>${student.roll}</td>
+                                <td>${student.name}</td>
+                                <td>
+                                    <div class="progress">
+                                        <div class="progress-bar ${percentage >= 75 ? 'bg-success' : percentage >= 50 ? 'bg-warning' : 'bg-danger'}" 
+                                             role="progressbar" style="width: ${percentage}%" 
+                                             aria-valuenow="${percentage}" aria-valuemin="0" aria-valuemax="100">
+                                            ${percentage}%
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                        `;
+        }).join('')}
+                </tbody>
+            </table>
+        </div>
+    `;
+    }
+
+    // Render student table
+    function renderStudentTable() {
+        return `
+            <div class="table-responsive">
+                <table class="table table-striped table-hover">
+                    <thead>
+                        <tr>
+                            <th>Roll No.</th>
+                            <th>Name</th>
+                            <th>Section</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${students.map(student => `
+                            <tr class="animate__animated animate__fadeIn">
+                                <td>${student.roll}</td>
+                                <td>${student.name}</td>
+                                <td>${student.section}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            </div>
+        `;
+    }
+
+    // Render recent attendance
+    // Render recent attendance
+    function renderRecentAttendance(records = attendanceRecords.slice(0, 5), showTeacher = true) {
+        return `
+        <div class="table-responsive">
+            <table class="table table-striped table-hover">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Subject</th>
+                        ${showTeacher ? '<th>Teacher</th>' : ''}
+                        <th>Present</th>
+                        <th>Absent</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${records.map((record, index) => `
+                        <tr class="animate__animated animate__fadeIn" style="animation-delay: ${index * 0.1}s">
+                            <td>${formatDate(record.date)}</td>
+                            <td>${record.subject}</td>
+                            ${showTeacher ? `<td>${record.teacher}</td>` : ''}
+                            <td>${record.records.filter(r => r.status === 'present').length}</td>
+                            <td>${record.records.filter(r => r.status === 'absent').length}</td>
+                            <td>
+                                <div class="d-flex">
+                                    <button class="btn btn-sm btn-outline-primary view-attendance me-1 animate-hover" 
+                                            data-id="${record.id}" data-bs-toggle="tooltip" title="View Details">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-warning edit-attendance me-1 animate-hover" 
+                                            data-id="${record.id}" data-bs-toggle="tooltip" title="Edit Record">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-danger delete-attendance animate-hover" 
+                                            data-id="${record.id}" data-bs-toggle="tooltip" title="Delete Record">
+                                        <i class="fas fa-trash-alt"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        </div>
+    `;
+    }
+
+    // Render attendance page
+    function renderAttendancePage() {
+        elements.mainContent.innerHTML = `
+            <div id="attendancePage" class="animate__animated animate__fadeIn">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h2>
+                        <i class="fas fa-calendar-check me-2"></i>
+                        Attendance for ${formatDate(currentAttendance.date)} - ${currentAttendance.subject}
+                    </h2>
+                    <div>
+                        <button class="btn btn-secondary me-2 animate-hover" id="backToDashboard">
+                            <i class="fas fa-arrow-left me-1"></i> Back
+                        </button>
+                        <button class="btn btn-success animate-hover" id="saveAttendance">
+                            <i class="fas fa-save me-1"></i> Save
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">Mark Attendance</h5>
+                            <div>
+                                <span class="badge bg-success me-2">
+                                    <i class="fas fa-check"></i> Present: ${currentAttendance.records.filter(r => r.status === 'present').length}
+                                </span>
+                                <span class="badge bg-danger">
+                                    <i class="fas fa-times"></i> Absent: ${currentAttendance.records.filter(r => r.status === 'absent').length}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-striped table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Roll No.</th>
+                                        <th>Name</th>
+                                        <th>Section</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${currentAttendance.records.map((record, index) => {
+            const student = students.find(s => s.id === record.studentId);
+            return `
+                                            <tr class="animate__animated animate__fadeIn" style="animation-delay: ${index * 0.05}s">
+                                                <td>${student?.roll || 'N/A'}</td>
+                                                <td>${student?.name || 'Unknown Student'}</td>
+                                                <td>${student?.section || 'N/A'}</td>
+                                                <td>
+                                                    <div class="status-btn ${record.status === 'present' ? 'present' : 'absent'} animate-hover" 
+                                                         data-student-id="${student?.id || ''}">
+                                                        <i class="fas ${record.status === 'present' ? 'fa-check' : 'fa-times'}"></i>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        `;
+        }).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    // Handle add student
+    function handleAddStudent(e) {
+        e.preventDefault();
+
+        const name = document.getElementById('studentName').value.trim();
+        const roll = document.getElementById('studentRoll').value.trim();
+        const section = document.getElementById('studentSection').value;
+
+        // Validate inputs
+        if (!name || !roll || !section) {
+            showToast('Please fill all fields', 'warning');
+            return;
+        }
+
+        // Check if roll number exists
+        if (students.some(student => student.roll === roll)) {
+            showToast('Student with this roll number already exists!', 'danger');
+            return;
+        }
+
+        const newStudent = {
+            id: Date.now().toString(),
+            name,
+            roll,
+            section
+        };
+
+        students.push(newStudent);
+        saveStudents();
+
+        // Close modal and reset form
+        const addStudentModal = bootstrap.Modal.getInstance(document.getElementById('addStudentModal'));
+        addStudentModal.hide();
+        e.target.reset();
+
+        // Update UI
+        renderMainContent();
+        showToast('Student added successfully!', 'success');
+
+        // Refresh attendance page if open
+        if (document.getElementById('attendancePage')) {
+            renderAttendancePage();
+        }
+    }
+
+    // Handle select date for attendance
+    function handleSelectDate(e) {
+        e.preventDefault();
+
+        const date = document.getElementById('attendanceDate').value;
+        const subject = document.getElementById('attendanceSubject').value;
+        const section = document.getElementById('attendanceSection').value;
+
+        if (!date || !subject || !section) {
+            showToast('Please fill all fields', 'warning');
+            return;
+        }
+
+        // Set up current attendance
+        currentAttendance = {
+            date,
+            subject,
+            section,
+            teacher: currentUser.email,
+            records: []
+        };
+
+        // Find students in this section
+        const sectionStudents = students.filter(student => student.section === section);
+
+        // Initialize attendance records for each student (default: present)
+        currentAttendance.records = sectionStudents.map(student => ({
+            studentId: student.id,
+            status: 'present'
+        }));
+
+        // Close modal and reset form
+        const selectDateModal = bootstrap.Modal.getInstance(document.getElementById('selectDateModal'));
+        selectDateModal.hide();
+        e.target.reset();
+
+        // Render attendance page
+        renderAttendancePage();
+    }
+
+    // Toggle attendance status
+    function toggleAttendanceStatus(button) {
+        const studentId = button.dataset.studentId;
+        const record = currentAttendance.records.find(r => r.studentId === studentId);
+
+        if (record) {
+            record.status = record.status === 'present' ? 'absent' : 'present';
+            button.classList.toggle('present');
+            button.classList.toggle('absent');
+            button.innerHTML = `<i class="fas ${record.status === 'present' ? 'fa-check' : 'fa-times'}"></i>`;
+
+            // Update counts in header
+            const presentCount = currentAttendance.records.filter(r => r.status === 'present').length;
+            const absentCount = currentAttendance.records.filter(r => r.status === 'absent').length;
+
+            document.querySelector('.badge.bg-success').innerHTML = `<i class="fas fa-check"></i> Present: ${presentCount}`;
+            document.querySelector('.badge.bg-danger').innerHTML = `<i class="fas fa-times"></i> Absent: ${absentCount}`;
+        }
+    }
+
+    // Save current attendance
+    // Save current attendance
+    function saveCurrentAttendance() {
+        // Validate
+        if (currentAttendance.records.length === 0) {
+            showToast('No attendance records to save', 'warning');
+            return;
+        }
+
+        // Check if this is an edit or new record
+        const isEdit = attendanceRecords.some(r => r.id === currentAttendance.id);
+
+        if (isEdit) {
+            // Update existing record
+            const index = attendanceRecords.findIndex(r => r.id === currentAttendance.id);
+            attendanceRecords[index] = currentAttendance;
+            showToast('Attendance record updated successfully!', 'success');
+        } else {
+            // Add new record with unique ID
+            currentAttendance.id = Date.now().toString();
+            attendanceRecords.push(currentAttendance);
+            showToast('Attendance record saved successfully!', 'success');
+        }
+
+        saveAttendanceRecords();
+
+        // Return to dashboard
+        renderMainContent();
+    }
+
+    // Confirm leaving attendance page
+    function confirmLeaveAttendance() {
+        const confirmLeave = confirm('You have unsaved changes. Are you sure you want to leave?');
+        if (confirmLeave) {
+            renderMainContent();
+        }
+    }
+
+    // View attendance details
+    function viewAttendanceDetails(recordId) {
+        const record = attendanceRecords.find(r => r.id === recordId);
+        if (!record) return;
+
+        const modalContent = `
+            <div class="modal-header">
+                <h5 class="modal-title">Attendance Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <h6>${formatDate(record.date)} - ${record.subject}</h6>
+                    <p class="mb-1">Section: ${record.section}</p>
+                    <p>Teacher: ${record.teacher}</p>
+                </div>
+                
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Roll No.</th>
+                                <th>Name</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${record.records.map(r => {
+            const student = students.find(s => s.id === r.studentId);
+            return `
+                                    <tr>
+                                        <td>${student?.roll || 'N/A'}</td>
+                                        <td>${student?.name || 'Unknown Student'}</td>
+                                        <td>
+                                            <span class="badge ${r.status === 'present' ? 'bg-success' : 'bg-danger'}">
+                                                ${r.status === 'present' ? 'Present' : 'Absent'}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                `;
+        }).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary download-attendance" data-id="${record.id}">
+                    <i class="fas fa-download me-1"></i> Download
+                </button>
+            </div>
+        `;
+
+        showModal(modalContent);
+    }
+
+    // Download attendance as PDF
+    function downloadAttendance(recordId) {
+        const record = attendanceRecords.find(r => r.id === recordId);
+        if (!record) return;
+
+        // In a real app, this would generate an actual PDF
+        // For this demo, we'll just show a success message
+        showToast(`Preparing download for ${record.subject} on ${formatDate(record.date)}`, 'info');
+
+        // Simulate PDF generation delay
+        setTimeout(() => {
+            showToast('PDF downloaded successfully!', 'success');
+        }, 1500);
+    }
+
+    // Apply filters
+    function applyFilters() {
+        const section = document.getElementById('filterSection').value;
+        const subject = document.getElementById('filterSubject').value;
+        const date = document.getElementById('filterDate').value;
+
+        const resultsContainer = document.getElementById('filteredResults');
+        const loading = document.getElementById('filterLoading');
+
+        // Show loading
+        resultsContainer.innerHTML = '';
+        loading.classList.remove('d-none');
+
+        // Simulate API delay
+        setTimeout(() => {
+            let filtered = [...attendanceRecords];
+
+            if (section) {
+                filtered = filtered.filter(r => r.section === section);
+            }
+
+            if (subject) {
+                filtered = filtered.filter(r => r.subject === subject);
+            }
+
+            if (date) {
+                filtered = filtered.filter(r => r.date === date);
+            }
+
+            // Hide loading
+            loading.classList.add('d-none');
+
+            // Show results
+            if (filtered.length === 0) {
+                resultsContainer.innerHTML = '<p class="text-muted">No records match your filters.</p>';
+                return;
+            }
+
+            // Group by date, subject, section
+            const grouped = {};
+            filtered.forEach(record => {
+                const key = `${record.date}-${record.subject}-${record.section}`;
+                if (!grouped[key]) {
+                    grouped[key] = {
+                        date: record.date,
+                        subject: record.subject,
+                        section: record.section,
+                        count: 0,
+                        present: 0
+                    };
+                }
+                grouped[key].count += record.records.length;
+                grouped[key].present += record.records.filter(r => r.status === 'present').length;
+            });
+
+            const resultsHTML = `
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Subject</th>
+                                <th>Section</th>
+                                <th>Present</th>
+                                <th>Total</th>
+                                <th>Percentage</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${Object.values(grouped).map(group => `
+                                <tr>
+                                    <td>${formatDate(group.date)}</td>
+                                    <td>${group.subject}</td>
+                                    <td>${group.section}</td>
+                                    <td>${group.present}</td>
+                                    <td>${group.count}</td>
+                                    <td>${Math.round((group.present / group.count) * 100)}%</td>
+                                    <td>
+                                        <button class="btn btn-sm btn-outline-primary view-filtered-attendance me-1 animate-hover"
+                                                data-date="${group.date}" data-subject="${group.subject}" data-section="${group.section}">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-success download-filtered-attendance animate-hover"
+                                                data-date="${group.date}" data-subject="${group.subject}" data-section="${group.section}">
+                                            <i class="fas fa-download"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+
+            resultsContainer.innerHTML = resultsHTML;
+        }, 1000);
+    }
+
+    // Reset filters
+    function resetFilters() {
+        document.getElementById('filterSection').value = '';
+        document.getElementById('filterSubject').value = '';
+        document.getElementById('filterDate').value = new Date().toISOString().split('T')[0];
+        document.getElementById('filteredResults').innerHTML = '';
+    }
+
+    // View filtered attendance
+    function viewFilteredAttendance(date, subject, section) {
+        const filtered = attendanceRecords.filter(r =>
+            r.date === date &&
+            r.subject === subject &&
+            r.section === section
+        );
+
+        if (filtered.length === 0) return;
+
+        // Combine all records from matching attendance
+        const combinedRecords = [];
+        filtered.forEach(record => {
+            combinedRecords.push(...record.records);
+        });
+
+        const modalContent = `
+            <div class="modal-header">
+                <h5 class="modal-title">${formatDate(date)} - ${subject} (${section})</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Roll No.</th>
+                                <th>Name</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${combinedRecords.map(r => {
+            const student = students.find(s => s.id === r.studentId);
+            return `
+                                    <tr>
+                                        <td>${student?.roll || 'N/A'}</td>
+                                        <td>${student?.name || 'Unknown Student'}</td>
+                                        <td>
+                                            <span class="badge ${r.status === 'present' ? 'bg-success' : 'bg-danger'}">
+                                                ${r.status === 'present' ? 'Present' : 'Absent'}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                `;
+        }).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary download-filtered-attendance" 
+                        data-date="${date}" data-subject="${subject}" data-section="${section}">
+                    <i class="fas fa-download me-1"></i> Download
+                </button>
+            </div>
+        `;
+
+        showModal(modalContent);
+    }
+
+    // Download filtered attendance
+    function downloadFilteredAttendance(date, subject, section) {
+        // In a real app, this would generate an actual PDF
+        showToast(`Preparing download for ${subject} (${section}) on ${formatDate(date)}`, 'info');
+
+        // Simulate PDF generation delay
+        setTimeout(() => {
+            showToast('PDF downloaded successfully!', 'success');
+        }, 1500);
+    }
+
+    // Show modal with custom content
+    function showModal(content) {
+        const modalContainer = document.getElementById('modalContainer');
+        modalContainer.innerHTML = `
+            <div class="modal fade" id="dynamicModal" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        ${content}
+                    </div>
+                </div>
+            </div>
+        `;
+
+        const modal = new bootstrap.Modal(document.getElementById('dynamicModal'));
+        modal.show();
+    }
+
+    // Show toast notification
+    function showToast(message, type = 'info') {
+        const toastContainer = document.getElementById('toastContainer');
+        const toastId = `toast-${Date.now()}`;
+
+        const toastHTML = `
+            <div class="toast align-items-center text-white bg-${type} border-0 animate__animated animate__fadeInUp" 
+                 id="${toastId}" role="alert" aria-live="assertive" aria-atomic="true">
+                <div class="d-flex">
+                    <div class="toast-body">
+                        ${message}
+                    </div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+                </div>
+            </div>
+        `;
+
+        toastContainer.insertAdjacentHTML('beforeend', toastHTML);
+        const toast = new bootstrap.Toast(document.getElementById(toastId));
+        toast.show();
+
+        // Remove toast after it hides
+        document.getElementById(toastId).addEventListener('hidden.bs.toast', () => {
+            document.getElementById(toastId).remove();
+        });
+    }
+
+    // Format date
+    function formatDate(dateString) {
+        const options = { year: 'numeric', month: 'short', day: 'numeric', weekday: 'short' };
+        return new Date(dateString).toLocaleDateString(undefined, options);
+    }
+
+    // Save students to localStorage
+    function saveStudents() {
+        localStorage.setItem('students', JSON.stringify(students));
+    }
+
+    // Save attendance records to localStorage
+    function saveAttendanceRecords() {
+        localStorage.setItem('attendanceRecords', JSON.stringify(attendanceRecords));
+    }
+
+    function renderStudentDashboard() {
+        // Get attendance records for this student
+        const studentRecords = attendanceRecords
+            .filter(record =>
+                record.records.some(r =>
+                    r.studentId === currentUser.studentId
+                )
+            )
+            .map(record => {
+                const status = record.records.find(r => r.studentId === currentUser.studentId).status;
+                return {
+                    ...record,
+                    status
+                };
+            });
+
+        elements.mainContent.innerHTML = `
+        <div class="row mb-4 animate__animated animate__fadeIn">
+            <div class="col-md-6">
+                <h2><i class="fas fa-user-graduate me-2"></i>Student Dashboard</h2>
+            </div>
+            <div class="col-md-6 text-md-end">
+                <button class="btn btn-danger animate-hover" id="logoutBtn">
+                    <i class="fas fa-sign-out-alt me-1"></i> Logout
+                </button>
+            </div>
+        </div>
+        
+        <div class="card mb-4 animate__animated animate__fadeInUp">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-calendar-alt me-2"></i>Your Attendance Summary</h5>
+            </div>
+            <div class="card-body">
+                ${studentRecords.length > 0 ? `
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Subject</th>
+                                    <th>Section</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${studentRecords.map((record, index) => `
+                                    <tr class="animate__animated animate__fadeIn" style="animation-delay: ${index * 0.1}s">
+                                        <td>${formatDate(record.date)}</td>
+                                        <td>${record.subject}</td>
+                                        <td>${record.section}</td>
+                                        <td>
+                                            <span class="badge ${record.status === 'present' ? 'bg-success' : 'bg-danger'}">
+                                                ${record.status === 'present' ? 'Present' : 'Absent'}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                ` : '<p class="text-muted">No attendance records found.</p>'}
+            </div>
+        </div>
+    `;
+    }
+
+    // Delete attendance record
+    function deleteAttendanceRecord(recordId) {
+        const confirmDelete = confirm('Are you sure you want to delete this attendance record?');
+        if (confirmDelete) {
+            attendanceRecords = attendanceRecords.filter(record => record.id !== recordId);
+            saveAttendanceRecords();
+            renderMainContent();
+            showToast('Attendance record deleted successfully', 'success');
+        }
+    }
+
+    // Edit attendance record
+    function editAttendanceRecord(recordId) {
+        const record = attendanceRecords.find(r => r.id === recordId);
+        if (!record) return;
+
+        // Set as current attendance for editing
+        currentAttendance = { ...record };
+
+        // Render the attendance page in edit mode
+        renderAttendancePage();
+
+        // Show edit mode indicator
+        const attendancePage = document.getElementById('attendancePage');
+        if (attendancePage) {
+            const header = attendancePage.querySelector('h2');
+            if (header) {
+                header.innerHTML += ' <span class="badge bg-warning">Edit Mode</span>';
+            }
+        }
+    }
+
+    // Filter students by section
+    function filterStudentsBySection(section) {
+        const filteredStudents = section ? students.filter(s => s.section === section) : students;
+        const tableBody = document.querySelector('.table.students tbody');
+
+        if (tableBody) {
+            tableBody.innerHTML = filteredStudents.map(student => `
+            <tr>
+                <td>${student.roll}</td>
+                <td>${student.name}</td>
+                <td>${student.section}</td>
+            </tr>
+        `).join('');
+        }
+    }
+
+
+    // Render section cards
+    function renderSectionCards() {
+        const sections = [...new Set(students.map(s => s.section))];
+
+        if (sections.length === 0) {
+            return '<p class="text-muted">No sections available</p>';
+        }
+
+        return sections.map(section => {
+            const sectionStudents = students.filter(s => s.section === section);
+            return `
+            <div class="col-md-3 mb-3">
+                <div class="card section-card animate-hover" data-section="${section}" style="cursor: pointer;">
+                    <div class="card-body text-center">
+                        <h5 class="card-title">${section}</h5>
+                        <p class="display-6">${sectionStudents.length}</p>
+                        <p class="text-muted">Students</p>
+                    </div>
+                </div>
+            </div>
+        `;
+        }).join('');
+    }
+
+    // Render student table with delete options
+    function renderStudentTable(filterSection = null) {
+        const filteredStudents = filterSection
+            ? students.filter(s => s.section === filterSection)
+            : students;
+
+        if (filteredStudents.length === 0) {
+            return '<p class="text-muted">No students in this section</p>';
+        }
+
+        return `
+        <div class="table-responsive">
+            <table class="table table-striped table-hover students">
                 <thead>
                     <tr>
                         <th>Roll No.</th>
@@ -434,13 +1388,14 @@ function renderStudentTable() {
                     </tr>
                 </thead>
                 <tbody>
-                    ${students.map(student => `
-                        <tr class="animate__animated animate__fadeIn">
+                    ${filteredStudents.map(student => `
+                        <tr>
                             <td>${student.roll}</td>
                             <td>${student.name}</td>
                             <td>${student.section}</td>
                             <td>
-                                <button class="btn btn-sm btn-outline-danger delete-student animate-hover" data-id="${student.id}" data-bs-toggle="tooltip" title="Delete Student">
+                                <button class="btn btn-sm btn-outline-danger delete-student animate-hover" 
+                                        data-id="${student.id}" data-bs-toggle="tooltip" title="Delete Student">
                                     <i class="fas fa-trash-alt"></i>
                                 </button>
                             </td>
@@ -450,358 +1405,27 @@ function renderStudentTable() {
             </table>
         </div>
     `;
-}
-
-// Render Recent Attendance
-function renderRecentAttendance(teacherEmail = null) {
-    const recordsToShow = teacherEmail ?
-        attendanceRecords.filter(r => r.teacher === teacherEmail).slice(0, 5) :
-        attendanceRecords.slice(0, 5);
-
-    return `
-        <div class="table-responsive">
-            <table class="table table-striped table-hover">
-                <thead>
-                    <tr>
-                        <th>Date</th>
-                        <th>Subject</th>
-                        ${teacherEmail ? '' : '<th>Teacher</th>'}
-                        <th>Present</th>
-                        <th>Absent</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${recordsToShow.map((record, index) => `
-                        <tr class="animate__animated animate__fadeIn" style="animation-delay: ${index * 0.1}s">
-                            <td>${formatDate(record.date)}</td>
-                            <td>${record.subject}</td>
-                            ${teacherEmail ? '' : `<td>${record.teacher}</td>`}
-                            <td>${record.records.filter(r => r.status === 'present').length}</td>
-                            <td>${record.records.filter(r => r.status === 'absent').length}</td>
-                            <td>
-                                <button class="btn btn-sm btn-outline-primary view-attendance me-1 animate-hover" data-id="${record.id}" data-bs-toggle="tooltip" title="View Details">
-                                    <i class="fas fa-eye"></i>
-                                </button>
-                                <button class="btn btn-sm btn-outline-success download-attendance animate-hover" data-id="${record.id}" data-bs-toggle="tooltip" title="Download PDF">
-                                    <i class="fas fa-download"></i>
-                                </button>
-                            </td>
-                        </tr>
-                    `).join('')}
-                </tbody>
-            </table>
-        </div>
-    `;
-}
-
-// Render Attendance Page
-function renderAttendancePage() {
-    mainContent.innerHTML = `
-        <div id="attendancePage" class="animate__animated animate__fadeIn">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h2>
-                    <i class="fas fa-calendar-check me-2"></i>
-                    Attendance for ${formatDate(currentAttendance.date)} - ${currentAttendance.subject}
-                </h2>
-                <div>
-                    <button class="btn btn-secondary me-2 animate-hover" id="backToDashboard">
-                        <i class="fas fa-arrow-left me-1"></i> Back
-                    </button>
-                    <button class="btn btn-success animate-hover" id="saveAttendance">
-                        <i class="fas fa-save me-1"></i> Save
-                    </button>
-                </div>
-            </div>
-            
-            <div class="card mb-4">
-                <div class="card-header">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <h5 class="mb-0">Mark Attendance</h5>
-                        <div>
-                            <span class="badge bg-success me-2">
-                                <i class="fas fa-check"></i> Present: ${currentAttendance.records.filter(r => r.status === 'present').length}
-                            </span>
-                            <span class="badge bg-danger">
-                                <i class="fas fa-times"></i> Absent: ${currentAttendance.records.filter(r => r.status === 'absent').length}
-                            </span>
-                        </div>
-                    </div>
-                </div>
-                <div class="card-body">
-                    <div class="attendance-table">
-                        <table class="table table-striped table-hover">
-                            <thead>
-                                <tr>
-                                    <th>Roll No.</th>
-                                    <th>Name</th>
-                                    <th>Section</th>
-                                    <th>Status</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                ${currentAttendance.records.map((record, index) => {
-        const student = students.find(s => s.id === record.studentId);
-        return `
-                                        <tr class="animate__animated animate__fadeIn" style="animation-delay: ${index * 0.05}s">
-                                            <td>${student?.roll || 'N/A'}</td>
-                                            <td>${student?.name || 'Unknown Student'}</td>
-                                            <td>${student?.section || 'N/A'}</td>
-                                            <td>
-                                                <div class="status-btn ${record.status === 'present' ? 'present' : 'absent'} animate-hover" 
-                                                     data-student-id="${student?.id || ''}">
-                                                    <i class="fas ${record.status === 'present' ? 'fa-check' : 'fa-times'}"></i>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    `;
-    }).join('')}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </div>
-    `;
-}
-
-// Toggle Attendance Status
-function toggleAttendanceStatus(button) {
-    const studentId = button.getAttribute('data-student-id');
-    const record = currentAttendance.records.find(r => r.studentId === studentId);
-
-    if (!record) return;
-
-    if (record.status === 'present') {
-        record.status = 'absent';
-        button.classList.remove('present');
-        button.classList.add('absent');
-        button.innerHTML = '<i class="fas fa-times"></i>';
-    } else {
-        record.status = 'present';
-        button.classList.remove('absent');
-        button.classList.add('present');
-        button.innerHTML = '<i class="fas fa-check"></i>';
     }
 
-    // Update counters
-    const presentCount = currentAttendance.records.filter(r => r.status === 'present').length;
-    const absentCount = currentAttendance.records.filter(r => r.status === 'absent').length;
 
-    document.querySelector('.badge.bg-success').innerHTML = `<i class="fas fa-check"></i> Present: ${presentCount}`;
-    document.querySelector('.badge.bg-danger').innerHTML = `<i class="fas fa-times"></i> Absent: ${absentCount}`;
-}
-
-// Confirm Leave Attendance
-function confirmLeaveAttendance() {
-    if (confirm('Are you sure you want to leave? Any unsaved changes will be lost.')) {
-        renderMainContent();
-    }
-}
-
-// Save Current Attendance
-function saveCurrentAttendance() {
-    const attendanceRecord = {
-        id: Date.now().toString(),
-        date: currentAttendance.date,
-        subject: currentAttendance.subject,
-        teacher: currentUser.email,
-        records: currentAttendance.records
-    };
-
-    attendanceRecords.push(attendanceRecord);
-    saveAttendanceRecords();
-
-    showToast('Attendance saved successfully!', 'success');
-    renderMainContent();
-}
-
-// View Attendance Details
-function viewAttendanceDetails(recordId) {
-    const record = attendanceRecords.find(r => r.id === recordId);
-    if (!record) return;
-
-    const presentStudents = record.records.filter(r => r.status === 'present').map(r => {
-        const student = students.find(s => s.id === r.studentId);
-        return student ? `${student.name} (${student.roll})` : 'Unknown Student';
-    });
-
-    const absentStudents = record.records.filter(r => r.status === 'absent').map(r => {
-        const student = students.find(s => s.id === r.studentId);
-        return student ? `${student.name} (${student.roll})` : 'Unknown Student';
-    });
-
-    const modalId = 'attendanceDetailsModal-' + recordId;
-
-    const modalHTML = `
-        <div class="modal fade" id="${modalId}" tabindex="-1" aria-labelledby="${modalId}Label" aria-hidden="true">
-            <div class="modal-dialog modal-lg">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title" id="${modalId}Label">Attendance Details</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                    </div>
-                    <div class="modal-body">
-                        <p><strong>Date:</strong> ${formatDate(record.date)}</p>
-                        <p><strong>Subject:</strong> ${record.subject}</p>
-                        <p><strong>Teacher:</strong> ${record.teacher}</p>
-                        
-                        <div class="row mt-4">
-                            <div class="col-md-6">
-                                <h6>Present Students (${presentStudents.length})</h6>
-                                <ul class="list-group">
-                                    ${presentStudents.map(student => `<li class="list-group-item">${student}</li>`).join('')}
-                                </ul>
-                            </div>
-                            <div class="col-md-6">
-                                <h6>Absent Students (${absentStudents.length})</h6>
-                                <ul class="list-group">
-                                    ${absentStudents.map(student => `<li class="list-group-item">${student}</li>`).join('')}
-                                </ul>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    `;
-
-    // Add modal to container
-    dynamicModalContainer.innerHTML = modalHTML;
-
-    // Show the modal
-    const modal = new bootstrap.Modal(document.getElementById(modalId));
-    modal.show();
-
-    // Remove modal from DOM after it's hidden
-    document.getElementById(modalId).addEventListener('hidden.bs.modal', function () {
-        dynamicModalContainer.innerHTML = '';
-    });
-}
-
-// Download Attendance as PDF
-function downloadAttendance(recordId) {
-    const record = attendanceRecords.find(r => r.id === recordId);
-    if (!record) return;
-
-    // Using jsPDF with autoTable plugin
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF();
-
-    // Title
-    doc.setFontSize(18);
-    doc.setTextColor(40);
-    doc.text(`Attendance Report - ${record.subject}`, 14, 20);
-
-    // Details
-    doc.setFontSize(12);
-    doc.text(`Date: ${formatDate(record.date)}`, 14, 30);
-    doc.text(`Teacher: ${record.teacher}`, 14, 36);
-
-    // Prepare data for the table
-    const tableData = record.records.map(r => {
-        const student = students.find(s => s.id === r.studentId);
-        return {
-            roll: student ? student.roll : 'N/A',
-            name: student ? student.name : 'Unknown Student',
-            section: student ? student.section : 'N/A',
-            status: r.status === 'present' ? 'Present' : 'Absent'
-        };
-    });
-
-    // AutoTable
-    doc.autoTable({
-        startY: 45,
-        head: [['Roll No.', 'Name', 'Section', 'Status']],
-        body: tableData.map(item => [item.roll, item.name, item.section, item.status]),
-        styles: {
-            cellPadding: 5,
-            fontSize: 10,
-            valign: 'middle'
-        },
-        headStyles: {
-            fillColor: [52, 58, 64],
-            textColor: 255
-        },
-        alternateRowStyles: {
-            fillColor: [240, 240, 240]
-        },
-        columnStyles: {
-            0: { cellWidth: 25 },
-            1: { cellWidth: 'auto' },
-            2: { cellWidth: 20 },
-            3: { cellWidth: 25 }
-        },
-        didDrawPage: function (data) {
-            // Footer
-            doc.setFontSize(10);
-            doc.setTextColor(150);
-            doc.text(`Generated on ${new Date().toLocaleDateString()}`, data.settings.margin.left, doc.internal.pageSize.height - 10);
+    // Delete student
+    function deleteStudent(studentId) {
+        const confirmDelete = confirm('Are you sure you want to delete this student?');
+        if (confirmDelete) {
+            students = students.filter(student => student.id !== studentId);
+            saveStudents();
+            renderMainContent();
+            showToast('Student deleted successfully', 'success');
         }
-    });
-
-    // Save the PDF
-    doc.save(`Attendance_${record.subject}_${formatDate(record.date, 'YYYY-MM-DD')}.pdf`);
-}
-
-// Handle Logout
-function handleLogout() {
-    currentUser = null;
-    localStorage.removeItem('rememberedUser');
-    renderMainContent();
-    showToast('Logged out successfully', 'info');
-}
-
-// Format Date
-function formatDate(dateString, format = 'long') {
-    const date = new Date(dateString);
-    if (format === 'YYYY-MM-DD') {
-        return date.toISOString().split('T')[0];
     }
 
-    const options = { year: 'numeric', month: 'long', day: 'numeric' };
-    return date.toLocaleDateString(undefined, options);
-}
+    // Public API
+    return {
+        init
+    };
+})();
 
-// Show Toast Notification
-function showToast(message, type = 'info') {
-    // Remove any existing toasts
-    const existingToasts = document.querySelectorAll('.toast-container');
-    existingToasts.forEach(toast => toast.remove());
+// Initialize the application when DOM is loaded
+document.addEventListener('DOMContentLoaded', AttendanceSystem.init);
 
-    const toastContainer = document.createElement('div');
-    toastContainer.className = 'toast-container position-fixed bottom-0 end-0 p-3';
-    toastContainer.style.zIndex = '11';
-
-    const toastHTML = `
-        <div class="toast show" role="alert" aria-live="assertive" aria-atomic="true">
-            <div class="toast-header">
-                <strong class="me-auto">Attendance System</strong>
-                <small>Just now</small>
-                <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
-            </div>
-            <div class="toast-body text-white bg-${type}">
-                ${message}
-            </div>
-        </div>
-    `;
-
-    toastContainer.innerHTML = toastHTML;
-    document.body.appendChild(toastContainer);
-
-    // Auto-remove after 5 seconds
-    setTimeout(() => {
-        toastContainer.remove();
-    }, 5000);
-}
-
-// Initialize tooltips when new content is added
-function initializeTooltips() {
-    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-    tooltipTriggerList.map(function (tooltipTriggerEl) {
-        return new bootstrap.Tooltip(tooltipTriggerEl);
-    });
-}
+// Render student dashboard
