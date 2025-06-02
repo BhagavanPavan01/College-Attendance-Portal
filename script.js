@@ -202,6 +202,7 @@ const AttendanceSystem = (function () {
 
                 let isValid = false;
                 let role = '';
+                let userData = null;
 
                 // Check credentials based on login type
                 switch (loginType) {
@@ -209,29 +210,37 @@ const AttendanceSystem = (function () {
                         if (email === 'admin@college.com' && password === 'admin123') {
                             isValid = true;
                             role = 'admin';
+                            userData = { email, role };
                         }
                         break;
                     case 'teacher':
                         if (email === 'teacher@college.com' && password === 'teacher123') {
                             isValid = true;
                             role = 'teacher';
+                            userData = { email, role };
                         }
                         break;
                     case 'student':
-                        // Check if student exists (you would typically check against student records)
-                        const student = students.find(s => s.email === email && s.roll === password);
+                        const student = students.find(s => s.email === email);
                         if (student) {
-                            isValid = true;
-                            role = 'student';
+                            // Compare hashed passwords
+                            if (student.password === simpleHash(password)) {
+                                isValid = true;
+                                role = 'student';
+                                userData = {
+                                    email,
+                                    role,
+                                    studentId: student.id,
+                                    name: student.name,
+                                    section: student.section
+                                };
+                            }
                         }
                         break;
                 }
 
                 if (isValid) {
-                    currentUser = {
-                        email,
-                        role
-                    };
+                    currentUser = userData;
 
                     if (rememberMe) {
                         localStorage.setItem('rememberedUser', JSON.stringify(currentUser));
@@ -246,7 +255,7 @@ const AttendanceSystem = (function () {
 
                     // Update UI
                     renderMainContent();
-                    showToast(`Welcome back, ${role.charAt(0).toUpperCase() + role.slice(1)}!`, 'success');
+                    showToast(`Welcome back, ${role === 'student' ? currentUser.name : role.charAt(0).toUpperCase() + role.slice(1)}!`, 'success');
                 } else {
                     throw new Error('Invalid credentials for selected role');
                 }
@@ -258,6 +267,7 @@ const AttendanceSystem = (function () {
             }
         }, 1000);
     }
+
     // Handle logout
     function handleLogout() {
         currentUser = null;
@@ -793,11 +803,17 @@ const AttendanceSystem = (function () {
             return;
         }
 
+        // Generate email and password
+        const email = `${roll.toLowerCase()}@college.com`;
+        const password = simpleHash(roll); // Hash the roll number as default password
+
         const newStudent = {
             id: Date.now().toString(),
             name,
             roll,
-            section
+            section,
+            email,
+            password // Store hashed password
         };
 
         students.push(newStudent);
@@ -810,12 +826,24 @@ const AttendanceSystem = (function () {
 
         // Update UI
         renderMainContent();
-        showToast('Student added successfully!', 'success');
+        showToast(`Student added successfully! Default password: ${roll}`, 'success');
 
         // Refresh attendance page if open
         if (document.getElementById('attendancePage')) {
             renderAttendancePage();
         }
+    }
+
+    // Simple hash function for passwords (use bcrypt in production)
+    function simpleHash(str) {
+        let hash = 0;
+        if (str.length === 0) return hash;
+        for (let i = 0; i < str.length; i++) {
+            const char = str.charCodeAt(i);
+            hash = (hash << 5) - hash + char;
+            hash = hash & hash; // Convert to 32bit integer
+        }
+        return hash.toString();
     }
 
     // Handle select date for attendance
@@ -1228,68 +1256,164 @@ const AttendanceSystem = (function () {
     }
 
     function renderStudentDashboard() {
-        // Get attendance records for this student
+        // Get current student details
+        const student = students.find(s => s.id === currentUser.studentId);
+        if (!student) {
+            showToast('Student data not found', 'danger');
+            return handleLogout(); // Log out if student data is missing
+        }
+
+        // Get and process attendance records
         const studentRecords = attendanceRecords
-            .filter(record =>
-                record.records.some(r =>
-                    r.studentId === currentUser.studentId
-                )
-            )
+            .filter(record => record.records.some(r => r.studentId === currentUser.studentId))
             .map(record => {
-                const status = record.records.find(r => r.studentId === currentUser.studentId).status;
+                const studentRecord = record.records.find(r => r.studentId === currentUser.studentId);
                 return {
                     ...record,
-                    status
+                    status: studentRecord.status,
+                    teacher: record.teacher
                 };
             });
 
+        // Calculate attendance statistics
+        const totalClasses = studentRecords.length;
+        const presentClasses = studentRecords.filter(r => r.status === 'present').length;
+        const attendancePercentage = totalClasses > 0 ? Math.round((presentClasses / totalClasses) * 100) : 0;
+        const attendanceStatus = attendancePercentage >= 75 ? 'Good' : attendancePercentage >= 50 ? 'Fair' : 'Poor';
+
+        // Generate subject-wise breakdown
+        const subjectStats = {};
+        studentRecords.forEach(record => {
+            if (!subjectStats[record.subject]) {
+                subjectStats[record.subject] = { present: 0, total: 0 };
+            }
+            subjectStats[record.subject].total++;
+            if (record.status === 'present') {
+                subjectStats[record.subject].present++;
+            }
+        });
+
         elements.mainContent.innerHTML = `
-        <div class="row mb-4 animate__animated animate__fadeIn">
-            <div class="col-md-6">
-                <h2><i class="fas fa-user-graduate me-2"></i>Student Dashboard</h2>
-            </div>
-            <div class="col-md-6 text-md-end">
-                <button class="btn btn-danger animate-hover" id="logoutBtn">
-                    <i class="fas fa-sign-out-alt me-1"></i> Logout
-                </button>
+    <div class="row mb-4 animate__animated animate__fadeIn">
+        <div class="col-md-6">
+            <h2><i class="fas fa-user-graduate me-2"></i>Welcome, ${student.name} (${student.roll})</h2>
+            <p class="text-muted">${student.section} Section</p>
+        </div>
+        <div class="col-md-6 text-md-end">
+            <button class="btn btn-danger animate-hover" id="logoutBtn">
+                <i class="fas fa-sign-out-alt me-1"></i> Logout
+            </button>
+        </div>
+    </div>
+    
+    <div class="row mb-4">
+        <div class="col-md-4 mb-3">
+            <div class="card text-white bg-primary h-100">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="fas fa-calendar-check me-2"></i>Total Classes</h5>
+                    <p class="card-text display-4">${totalClasses}</p>
+                </div>
             </div>
         </div>
-        
-        <div class="card mb-4 animate__animated animate__fadeInUp">
-            <div class="card-header">
-                <h5 class="mb-0"><i class="fas fa-calendar-alt me-2"></i>Your Attendance Summary</h5>
+        <div class="col-md-4 mb-3">
+            <div class="card text-white bg-success h-100">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="fas fa-check-circle me-2"></i>Present</h5>
+                    <p class="card-text display-4">${presentClasses}</p>
+                </div>
             </div>
-            <div class="card-body">
-                ${studentRecords.length > 0 ? `
-                    <div class="table-responsive">
-                        <table class="table table-striped table-hover">
-                            <thead>
-                                <tr>
-                                    <th>Date</th>
-                                    <th>Subject</th>
-                                    <th>Section</th>
-                                    <th>Status</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                ${studentRecords.map((record, index) => `
-                                    <tr class="animate__animated animate__fadeIn" style="animation-delay: ${index * 0.1}s">
-                                        <td>${formatDate(record.date)}</td>
-                                        <td>${record.subject}</td>
-                                        <td>${record.section}</td>
+        </div>
+        <div class="col-md-4 mb-3">
+            <div class="card text-white ${attendancePercentage >= 75 ? 'bg-info' : attendancePercentage >= 50 ? 'bg-warning' : 'bg-danger'} h-100">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="fas fa-chart-line me-2"></i>Attendance</h5>
+                    <p class="card-text display-4">${attendancePercentage}%</p>
+                    <p class="mb-0">Status: ${attendanceStatus}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-4 animate__animated animate__fadeInUp">
+        <div class="card-header">
+            <h5 class="mb-0"><i class="fas fa-book me-2"></i>Subject-wise Performance</h5>
+        </div>
+        <div class="card-body">
+            ${Object.keys(subjectStats).length > 0 ? `
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover">
+                        <thead>
+                            <tr>
+                                <th>Subject</th>
+                                <th>Present</th>
+                                <th>Total</th>
+                                <th>Percentage</th>
+                                <th>Performance</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${Object.entries(subjectStats).map(([subject, stats]) => {
+            const percentage = Math.round((stats.present / stats.total) * 100);
+            return `
+                                    <tr>
+                                        <td>${subject}</td>
+                                        <td>${stats.present}</td>
+                                        <td>${stats.total}</td>
+                                        <td>${percentage}%</td>
                                         <td>
-                                            <span class="badge ${record.status === 'present' ? 'bg-success' : 'bg-danger'}">
-                                                ${record.status === 'present' ? 'Present' : 'Absent'}
-                                            </span>
+                                            <div class="progress" style="height: 20px;">
+                                                <div class="progress-bar ${percentage >= 75 ? 'bg-success' : percentage >= 50 ? 'bg-warning' : 'bg-danger'}" 
+                                                     role="progressbar" style="width: ${percentage}%" 
+                                                     aria-valuenow="${percentage}" aria-valuemin="0" aria-valuemax="100">
+                                                </div>
+                                            </div>
                                         </td>
                                     </tr>
-                                `).join('')}
-                            </tbody>
-                        </table>
-                    </div>
-                ` : '<p class="text-muted">No attendance records found.</p>'}
-            </div>
+                                `;
+        }).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            ` : '<p class="text-muted">No subject data available.</p>'}
         </div>
+    </div>
+
+    <div class="card animate__animated animate__fadeInUp">
+        <div class="card-header">
+            <h5 class="mb-0"><i class="fas fa-history me-2"></i>Detailed Attendance Records</h5>
+        </div>
+        <div class="card-body">
+            ${studentRecords.length > 0 ? `
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Subject</th>
+                                <th>Teacher</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${studentRecords.map((record, index) => `
+                                <tr class="animate__animated animate__fadeIn" style="animation-delay: ${index * 0.05}s">
+                                    <td>${formatDate(record.date)}</td>
+                                    <td>${record.subject}</td>
+                                    <td>${record.teacher || 'N/A'}</td>
+                                    <td>
+                                        <span class="badge ${record.status === 'present' ? 'bg-success' : 'bg-danger'}">
+                                            <i class="fas ${record.status === 'present' ? 'fa-check' : 'fa-times'} me-1"></i>
+                                            ${record.status === 'present' ? 'Present' : 'Absent'}
+                                        </span>
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            ` : '<p class="text-muted">No attendance records found.</p>'}
+        </div>
+    </div>
     `;
     }
 
