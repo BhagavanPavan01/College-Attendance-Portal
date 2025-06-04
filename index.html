@@ -28,6 +28,29 @@
         </div>
     </nav>
 
+    <!-- Announcement Ticker Below Navbar -->
+    <div class="announcement-bar bg-warning py-2">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-auto pe-0">
+                    <span class="badge bg-danger me-2">New</span>
+                </div>
+                <div class="col ps-0">
+                    <marquee behavior="scroll" direction="left" scrollamount="5" onmouseover="this.stop();"
+                        onmouseout="this.start();">
+                        <span class="me-4"><i class="fas fa-bullhorn me-2"></i> Upcoming exams starting next
+                            Monday!</span>
+                        <span class="me-4"><i class="fas fa-calendar-alt me-2"></i> Last date for assignment submission:
+                            15th June</span>
+                        <span><i class="fas fa-exclamation-triangle me-2"></i> Campus will remain closed on 20th
+                            June</span>
+                    </marquee>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
     <!-- Toast Container -->
     <div id="toastContainer" class="position-fixed bottom-0 end-0 p-3" style="z-index: 11"></div>
 
@@ -81,132 +104,160 @@
     </div> -->
 
 
-    <!-- Announcement Ticker Below Navbar -->
-    <div class="announcement-bar bg-warning py-2">
-        <div class="container">
-            <div class="row align-items-center">
-                <div class="col-auto pe-0">
-                    <span class="badge bg-danger me-2">New</span>
-                </div>
-                <div class="col ps-0">
-                    <marquee behavior="scroll" direction="left" scrollamount="5" onmouseover="this.stop();"
-                        onmouseout="this.start();">
-                        <span class="me-4"><i class="fas fa-bullhorn me-2"></i> Upcoming exams starting next
-                            Monday!</span>
-                        <span class="me-4"><i class="fas fa-calendar-alt me-2"></i> Last date for assignment submission:
-                            15th June</span>
-                        <span><i class="fas fa-exclamation-triangle me-2"></i> Campus will remain closed on 20th
-                            June</span>
-                    </marquee>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Login Modal with Background Image -->
-    <div class="modal fade" id="loginModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content border-0 overflow-hidden">
-                <!-- Modal Header with College Logo -->
-                <div class="modal-header position-relative"
-                    style="background: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)), url('https://images.unsplash.com/photo-1523050854058-8df90110c9f1?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1470&q=80') no-repeat center center/cover; height: 180px;">
-                    <div class="text-center w-100">
-                        <img src="https://via.placeholder.com/80x80" alt="College Logo" class="mb-2"
-                            style="height: 60px;">
-                        <h3 class="modal-title text-white mb-0">College Attendance Portal</h3>
+    <!-- Login Modal -->
+    <!-- Enhanced Login Modal -->
+    <div class="modal fade" id="loginModal" tabindex="-1" aria-labelledby="loginModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content border-0 shadow-lg">
+                <!-- Modal Header with Parallax Background -->
+                <div class="modal-header position-relative p-0 overflow-hidden" style="height: 200px;">
+                    <div class="parallax-background"
+                        style="background-image: url('https://wallpapers.com/images/hd/college-background-4ucekkclp0tepcan.jpg');">
+                    </div>
+                    <div class="position-absolute top-0 start-0 w-100 h-100 bg-dark bg-opacity-60"></div>
+                    <div class="position-relative z-index-1 w-100 text-center text-white py-4">
+                        <img src="https://jntugv.edu.in/static/media/jntugvcev.b33bb43b07b2037ab043.jpg" alt="College Logo" class="img-fluid mb-3"
+                            style="max-height: 80px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));">
+                        <h2 class="modal-title fs-3 mb-0" id="loginModalLabel">Campus Attendance Portal</h2>
+                        <p class="mb-0 opacity-75">Secure access to academic resources</p>
                     </div>
                     <button type="button" class="btn-close btn-close-white position-absolute top-0 end-0 m-3"
                         data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
 
-                <!-- Modal Body with Enhanced Form -->
-                <div class="modal-body p-4">
-                    <form id="loginForm">
+                <!-- Modal Body -->
+                <div class="modal-body p-4 p-md-5">
+                    <form id="loginForm" novalidate>
                         <div class="text-center mb-4">
-                            <h4 class="text-primary">Welcome Back!</h4>
-                            <p class="text-muted">Please login to access your account</p>
+                            <h3 class="text-primary mb-2">Welcome Back!</h3>
+                            <p class="text-muted">Please authenticate to continue</p>
                         </div>
 
+                        <!-- Role Selection -->
                         <div class="mb-4">
-                            <label for="loginType" class="form-label fw-bold">I am a</label>
-                            <div class="btn-group w-100" role="group">
-                                <input type="radio" class="btn-check" name="loginType" id="adminType" value="admin"
-                                    autocomplete="off">
-                                <label class="btn btn-outline-primary" for="adminType"><i
-                                        class="fas fa-user-shield me-2"></i>Admin</label>
+                            <label class="form-label fw-bold d-block mb-3">Select Your Role</label>
+                            <div class="d-flex flex-column flex-md-row gap-3">
+                                <div class="role-option flex-fill">
+                                    <input type="radio" class="btn-check" name="loginType" id="adminType" value="admin"
+                                        autocomplete="off" required>
+                                    <label class="btn btn-outline-primary w-100 py-3" for="adminType">
+                                        <i class="fas fa-user-shield fa-2x mb-2"></i>
+                                        <span class="d-block fw-bold">Administrator</span>
+                                        <span class="small text-muted">System management</span>
+                                    </label>
+                                </div>
 
-                                <input type="radio" class="btn-check" name="loginType" id="teacherType" value="teacher"
-                                    autocomplete="off">
-                                <label class="btn btn-outline-primary" for="teacherType"><i
-                                        class="fas fa-chalkboard-teacher me-2"></i>Teacher</label>
+                                <div class="role-option flex-fill">
+                                    <input type="radio" class="btn-check" name="loginType" id="teacherType"
+                                        value="teacher" autocomplete="off">
+                                    <label class="btn btn-outline-primary w-100 py-3" for="teacherType">
+                                        <i class="fas fa-chalkboard-teacher fa-2x mb-2"></i>
+                                        <span class="d-block fw-bold">Faculty</span>
+                                        <span class="small text-muted">Attendance & grades</span>
+                                    </label>
+                                </div>
 
-                                <input type="radio" class="btn-check" name="loginType" id="studentType" value="student"
-                                    autocomplete="off">
-                                <label class="btn btn-outline-primary" for="studentType"><i
-                                        class="fas fa-user-graduate me-2"></i>Student</label>
+                                <div class="role-option flex-fill">
+                                    <input type="radio" class="btn-check" name="loginType" id="studentType"
+                                        value="student" autocomplete="off">
+                                    <label class="btn btn-outline-primary w-100 py-3" for="studentType">
+                                        <i class="fas fa-user-graduate fa-2x mb-2"></i>
+                                        <span class="d-block fw-bold">Student</span>
+                                        <span class="small text-muted">View your records</span>
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="invalid-feedback mt-2">Please select your role</div>
+                        </div>
+
+                        <!-- Credentials Section -->
+                        <div class="credentials-section">
+                            <!-- Email Input -->
+                            <div class="mb-4">
+                                <label for="loginEmail" class="form-label fw-bold">Institutional Email</label>
+                                <div class="input-group has-validation">
+                                    <span class="input-group-text bg-light"><i
+                                            class="fas fa-envelope text-primary"></i></span>
+                                    <input type="email" class="form-control form-control-lg" id="loginEmail"
+                                        placeholder="your.id@college.edu" required
+                                        pattern="[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,4}$">
+                                    <div class="invalid-feedback">Please enter a valid college email</div>
+                                </div>
+                            </div>
+
+                            <!-- Password Input -->
+                            <div class="mb-3">
+                                <label for="loginPassword" class="form-label fw-bold">Password</label>
+                                <div class="input-group has-validation">
+                                    <span class="input-group-text bg-light"><i
+                                            class="fas fa-lock text-primary"></i></span>
+                                    <input type="password" class="form-control form-control-lg" id="loginPassword"
+                                        placeholder="Enter your password" required minlength="8">
+                                    <button class="btn btn-outline-secondary toggle-password" type="button"
+                                        aria-label="Toggle password visibility">
+                                        <i class="far fa-eye"></i>
+                                    </button>
+                                    <div class="invalid-feedback">Password must be at least 8 characters</div>
+                                </div>
+                                <div class="d-flex justify-content-between mt-2">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="rememberMe">
+                                        <label class="form-check-label small" for="rememberMe">Remember this
+                                            device</label>
+                                    </div>
+                                    <a href="#forgot-password" class="small text-decoration-none">Forgot password?</a>
+                                </div>
                             </div>
                         </div>
 
-                        <div class="mb-3">
-                            <label for="loginEmail" class="form-label fw-bold">Email Address</label>
-                            <div class="input-group">
-                                <span class="input-group-text bg-light"><i
-                                        class="fas fa-envelope text-primary"></i></span>
-                                <input type="email" class="form-control" id="loginEmail"
-                                    placeholder="Enter your college email" required>
-                            </div>
-                        </div>
-
-                        <div class="mb-3">
-                            <label for="loginPassword" class="form-label fw-bold">Password</label>
-                            <div class="input-group">
-                                <span class="input-group-text bg-light"><i class="fas fa-lock text-primary"></i></span>
-                                <input type="password" class="form-control" id="loginPassword"
-                                    placeholder="Enter your password" required>
-                                <button class="btn btn-outline-secondary toggle-password" type="button">
-                                    <i class="far fa-eye"></i>
-                                </button>
-                            </div>
-                            <div class="form-text text-end">
-                                <a href="#" class="text-decoration-none">Forgot password?</a>
-                            </div>
-                        </div>
-
-                        <div class="mb-3 form-check">
-                            <input type="checkbox" class="form-check-input" id="rememberMe">
-                            <label class="form-check-label" for="rememberMe">Remember me on this device</label>
-                        </div>
-
-                        <!-- <div class="d-grid gap-2 mt-4">
-                            <button type="submit" class="btn btn-primary btn-lg">
-                                <i class="fas fa-sign-in-alt me-2"></i>Login
+                        <!-- Submit Button -->
+                        <!-- <div class="d-grid mt-4">
+                            <button type="submit" class="btn btn-primary btn-lg py-3 fw-bold">
+                                <i class="fas fa-sign-in-alt me-2"></i> Secure Login
                             </button>
                         </div> -->
-                        <div class="modal-footer">
-                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                            <button type="submit" class="btn btn-primary">Login</button>
-                        </div>
 
-                        <div class="text-center mt-3">
-                            <p class="text-muted mb-0">Don't have an account? <a href="#"
-                                    class="text-decoration-none">Contact Admin</a></p>
+                        <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <button type="submit" class="btn btn-primary">Login</button>
+                    </div>
+
+                        <!-- Alternative Auth -->
+                        <div class="text-center mt-4">
+                            <p class="divider-text position-relative my-3">
+                                <span class="px-3 bg-white position-relative">or continue with</span>
+                            </p>
+                            <div class="d-flex justify-content-center gap-3">
+                                <button type="button" class="btn btn-outline-secondary rounded-circle p-3">
+                                    <i class="fab fa-google"></i>
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary rounded-circle p-3">
+                                    <i class="fab fa-microsoft"></i>
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary rounded-circle p-3">
+                                    <i class="fas fa-id-card"></i>
+                                </button>
+                            </div>
                         </div>
                     </form>
                 </div>
 
-                <!-- Modal Footer with Quick Links -->
+                <!-- Modal Footer -->
                 <div class="modal-footer justify-content-center bg-light">
-                    <div class="d-flex gap-3">
-                        <a href="#" class="text-decoration-none text-muted"><i class="fas fa-question-circle me-1"></i>
-                            Help</a>
-                        <a href="#" class="text-decoration-none text-muted"><i class="fas fa-info-circle me-1"></i>
-                            About</a>
-                        <a href="#" class="text-decoration-none text-muted"><i class="fas fa-lock me-1"></i> Privacy</a>
+                    <div class="text-center small">
+                        <p class="mb-1">Need help accessing your account?</p>
+                        <a href="#contact-support" class="text-decoration-none me-3">
+                            <i class="fas fa-headset me-1"></i> IT Support
+                        </a>
+                        <a href="#faq" class="text-decoration-none">
+                            <i class="fas fa-question-circle me-1"></i> FAQs
+                        </a>
                     </div>
                 </div>
             </div>
         </div>
     </div>
+
 
 
 

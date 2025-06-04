@@ -600,3 +600,105 @@ body {
 .delete-student:hover {
     transform: scale(1.1);
 }
+
+
+.announcement-bar {
+        border-top: 1px solid rgba(0,0,0,0.1);
+        border-bottom: 1px solid rgba(0,0,0,0.1);
+    }
+    .toggle-password:hover {
+        background-color: #f8f9fa;
+    }
+    .btn-group .btn {
+        border-radius: 0.25rem !important;
+    }
+    .btn-group .btn:first-child {
+        border-top-left-radius: 0.375rem !important;
+        border-bottom-left-radius: 0.375rem !important;
+    }
+    .btn-group .btn:last-child {
+        border-top-right-radius: 0.375rem !important;
+        border-bottom-right-radius: 0.375rem !important;
+    }
+
+ /* Announcement Ticker Styles */
+    .announcement-bar {
+        background-color: #fff8e1;
+    }
+    
+    .announcement-ticker {
+        overflow: hidden;
+        position: relative;
+        height: 24px;
+    }
+    
+    .ticker-content {
+        display: flex;
+        position: absolute;
+        animation: ticker-scroll 30s linear infinite;
+        white-space: nowrap;
+    }
+    
+    .ticker-item {
+        display: inline-flex;
+        align-items: center;
+        margin-right: 4rem;
+    }
+    
+    @keyframes ticker-scroll {
+        0% { transform: translateX(100%); }
+        100% { transform: translateX(-100%); }
+    }
+    
+    /* Login Modal Styles */
+    .parallax-background {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-attachment: fixed;
+        background-position: center;
+        background-repeat: no-repeat;
+        background-size: cover;
+    }
+    
+    .role-option .btn {
+        transition: all 0.3s ease;
+        border-radius: 8px !important;
+    }
+    
+    .role-option .btn:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    
+    .divider-text:before {
+        content: "";
+        position: absolute;
+        top: 50%;
+        left: 0;
+        right: 0;
+        height: 1px;
+        background-color: #dee2e6;
+        z-index: -1;
+    }
+    
+    .credentials-section {
+        transition: all 0.3s ease;
+    }
+    
+    .toggle-password {
+        transition: all 0.2s ease;
+    }
+    
+    .toggle-password:hover {
+        background-color: #f8f9fa;
+    }
+    
+    /* Accessibility Focus Styles */
+    .btn-check:focus + .btn, 
+    .form-control:focus,
+    .toggle-password:focus {
+        box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+    }

@@ -182,7 +182,7 @@ const AttendanceSystem = (function () {
     function handleLogin(e) {
         e.preventDefault();
 
-        const loginType = document.getElementById('loginType').value;
+        const loginType = document.querySelector('input[name="loginType"]:checked')?.value;
         const email = document.getElementById('loginEmail').value;
         const password = document.getElementById('loginPassword').value;
         const rememberMe = document.getElementById('rememberMe').checked;
@@ -190,14 +190,14 @@ const AttendanceSystem = (function () {
         // Show loading state
         const submitButton = e.target.querySelector('button[type="submit"]');
         const originalText = submitButton.innerHTML;
-        submitButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Logging in...';
+        submitButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Authenticating...';
         submitButton.disabled = true;
 
         // Simulate API call
         setTimeout(() => {
             try {
                 if (!loginType) {
-                    throw new Error('Please select a login type');
+                    throw new Error('Please select your role');
                 }
 
                 let isValid = false;
@@ -207,24 +207,33 @@ const AttendanceSystem = (function () {
                 // Check credentials based on login type
                 switch (loginType) {
                     case 'admin':
-                        if (email === 'admin@college.com' && password === 'admin123') {
+                        if (email === 'admin@college.edu' && password === 'Admin@123') {
                             isValid = true;
                             role = 'admin';
-                            userData = { email, role };
+                            userData = {
+                                email,
+                                role,
+                                name: 'Administrator'
+                            };
                         }
                         break;
                     case 'teacher':
-                        if (email === 'teacher@college.com' && password === 'teacher123') {
+                        if (email === 'faculty@college.edu' && password === 'Faculty@123') {
                             isValid = true;
                             role = 'teacher';
-                            userData = { email, role };
+                            userData = {
+                                email,
+                                role,
+                                name: 'Professor',
+                                department: 'Computer Science'
+                            };
                         }
                         break;
                     case 'student':
                         const student = students.find(s => s.email === email);
                         if (student) {
                             // Compare hashed passwords
-                            if (student.password === simpleHash(password)) {
+                            if (email === 'student@college.edu' && student.password === simpleHash(password)) {
                                 isValid = true;
                                 role = 'student';
                                 userData = {
@@ -232,7 +241,8 @@ const AttendanceSystem = (function () {
                                     role,
                                     studentId: student.id,
                                     name: student.name,
-                                    section: student.section
+                                    section: student.section,
+                                    rollNumber: student.rollNumber
                                 };
                             }
                         }
@@ -255,9 +265,9 @@ const AttendanceSystem = (function () {
 
                     // Update UI
                     renderMainContent();
-                    showToast(`Welcome back, ${role === 'student' ? currentUser.name : role.charAt(0).toUpperCase() + role.slice(1)}!`, 'success');
+                    showToast(`Welcome back, ${userData.name || role.charAt(0).toUpperCase() + role.slice(1)}!`, 'success');
                 } else {
-                    throw new Error('Invalid credentials for selected role');
+                    throw new Error('Invalid institutional credentials');
                 }
             } catch (error) {
                 showToast(error.message, 'danger');
@@ -265,7 +275,7 @@ const AttendanceSystem = (function () {
                 submitButton.innerHTML = originalText;
                 submitButton.disabled = false;
             }
-        }, 1000);
+        }, 1500);
     }
 
     // Handle logout
@@ -1553,3 +1563,4 @@ const AttendanceSystem = (function () {
 document.addEventListener('DOMContentLoaded', AttendanceSystem.init);
 
 // Render student dashboard
+
