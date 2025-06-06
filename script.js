@@ -1564,3 +1564,161 @@ document.addEventListener('DOMContentLoaded', AttendanceSystem.init);
 
 // Render student dashboard
 
+
+
+
+// ---------===================================================================================
+
+// Dark/Light mode toggle with localStorage
+document.addEventListener('DOMContentLoaded', () => {
+    const themeToggleBtn = document.getElementById('themeToggleBtn');
+    const toggleText = document.getElementById('toggleText');
+    const icon = themeToggleBtn.querySelector('i');
+
+    // Load saved theme
+    const savedTheme = localStorage.getItem('site-theme') || 'light';
+    setTheme(savedTheme);
+
+    themeToggleBtn.addEventListener('click', () => {
+        const currentTheme = document.body.classList.contains('light-theme') ? 'light' : 'dark';
+        const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+        setTheme(newTheme);
+        localStorage.setItem('site-theme', newTheme);
+    });
+
+    function setTheme(theme) {
+        if (theme === 'dark') {
+            document.body.classList.remove('light-theme');
+            document.body.classList.add('dark-theme');
+            toggleText.textContent = 'Light Mode';
+            icon.classList.remove('fa-moon');
+            icon.classList.add('fa-sun');
+        } else {
+            document.body.classList.remove('dark-theme');
+            document.body.classList.add('light-theme');
+            toggleText.textContent = 'Dark Mode';
+            icon.classList.remove('fa-sun');
+            icon.classList.add('fa-moon');
+        }
+    }
+});
+
+// -----------------------------------------------------------------------------------------------------------------------
+
+//===================================== Add this to your existing JavaScript code where you're building the mainContent
+const mainContent = document.getElementById('mainContent');
+
+// Background image and slideshow HTML
+mainContent.innerHTML = `
+    <style>
+        .background-container {
+            background-image: url('https://example.com/your-background-image.jpg');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .slideshow-container {
+            max-width: 1000px;
+            position: relative;
+            margin: auto;
+            background-color: rgba(255,255,255,0.8);
+            padding: 20px;
+            border-radius: 10px;
+        }
+        
+        .slide {
+            display: none;
+            text-align: center;
+        }
+        
+        .slide img {
+            max-height: 500px;
+            width: auto;
+            border-radius: 5px;
+        }
+        
+        .prev, .next {
+            cursor: pointer;
+            position: absolute;
+            top: 50%;
+            width: auto;
+            padding: 16px;
+            margin-top: -22px;
+            color: white;
+            font-weight: bold;
+            font-size: 18px;
+            transition: 0.6s ease;
+            border-radius: 0 3px 3px 0;
+            user-select: none;
+            background-color: rgba(0,0,0,0.5);
+        }
+        
+        .next {
+            right: 0;
+            border-radius: 3px 0 0 3px;
+        }
+        
+        .prev:hover, .next:hover {
+            background-color: rgba(0,0,0,0.8);
+        }
+        
+        .fade {
+            animation-name: fade;
+            animation-duration: 1.5s;
+        }
+        
+        @keyframes fade {
+            from {opacity: .4}
+            to {opacity: 1}
+        }
+    </style>
+
+    <div class="background-container">
+        <div class="slideshow-container">
+            <div class="slide fade">
+                <img src="https://example.com/college1.jpg" alt="College Photo 1">
+            </div>
+            
+            <div class="slide fade">
+                <img src="https://example.com/college2.jpg" alt="College Photo 2">
+            </div>
+            
+            <div class="slide fade">
+                <img src="https://example.com/college3.jpg" alt="College Photo 3">
+            </div>
+            
+            <a class="prev" onclick="plusSlides(-1)">&#10094;</a>
+            <a class="next" onclick="plusSlides(1)">&#10095;</a>
+        </div>
+    </div>
+
+    <script>
+        let slideIndex = 1;
+        showSlides(slideIndex);
+        
+        function plusSlides(n) {
+            showSlides(slideIndex += n);
+        }
+        
+        function showSlides(n) {
+            let i;
+            let slides = document.getElementsByClassName("slide");
+            if (n > slides.length) {slideIndex = 1}
+            if (n < 1) {slideIndex = slides.length}
+            for (i = 0; i < slides.length; i++) {
+                slides[i].style.display = "none";
+            }
+            slides[slideIndex-1].style.display = "block";
+        }
+        
+        // Auto slide change every 5 seconds
+        setInterval(() => {
+            plusSlides(1);
+        }, 5000);
+    </script>
+`;
+
+// ========================================================================================
