@@ -179,6 +179,105 @@ const AttendanceSystem = (function () {
 
     // Handle login
     // Handle login
+    // function handleLogin(e) {
+    //     e.preventDefault();
+
+    //     const loginType = document.querySelector('input[name="loginType"]:checked')?.value;
+    //     const email = document.getElementById('loginEmail').value;
+    //     const password = document.getElementById('loginPassword').value;
+    //     const rememberMe = document.getElementById('rememberMe').checked;
+
+    //     // Show loading state
+    //     const submitButton = e.target.querySelector('button[type="submit"]');
+    //     const originalText = submitButton.innerHTML;
+    //     submitButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Authenticating...';
+    //     submitButton.disabled = true;
+
+    //     // Simulate API call
+    //     setTimeout(() => {
+    //         try {
+    //             if (!loginType) {
+    //                 throw new Error('Please select your role');
+    //             }
+
+    //             let isValid = false;
+    //             let role = '';
+    //             let userData = null;
+
+    //             // Check credentials based on login type
+    //             switch (loginType) {
+    //                 case 'admin':
+    //                     if (email === 'admin@college.edu' && password === 'Admin@123') {
+    //                         isValid = true;
+    //                         role = 'admin';
+    //                         userData = {
+    //                             email,
+    //                             role,
+    //                             name: 'Administrator'
+    //                         };
+    //                     }
+    //                     break;
+    //                 case 'teacher':
+    //                     if (email === 'faculty@college.edu' && password === 'Faculty@123') {
+    //                         isValid = true;
+    //                         role = 'teacher';
+    //                         userData = {
+    //                             email,
+    //                             role,
+    //                             name: 'Professor',
+    //                             department: 'Computer Science'
+    //                         };
+    //                     }
+    //                     break;
+    //                 case 'student':
+    //                     const student = students.find(s => s.email === email);
+    //                     if (student) {
+    //                         // Compare hashed passwords
+    //                         if (email === 'student@college.edu' && student.password === simpleHash(password)) {
+    //                             isValid = true;
+    //                             role = 'student';
+    //                             userData = {
+    //                                 email,
+    //                                 role,
+    //                                 studentId: student.id,
+    //                                 name: student.name,
+    //                                 section: student.section,
+    //                                 rollNumber: student.rollNumber
+    //                             };
+    //                         }
+    //                     }
+    //                     break;
+    //             }
+
+    //             if (isValid) {
+    //                 currentUser = userData;
+
+    //                 if (rememberMe) {
+    //                     localStorage.setItem('rememberedUser', JSON.stringify(currentUser));
+    //                 } else {
+    //                     localStorage.removeItem('rememberedUser');
+    //                 }
+
+    //                 // Close modal and reset form
+    //                 const loginModal = bootstrap.Modal.getInstance(document.getElementById('loginModal'));
+    //                 loginModal.hide();
+    //                 e.target.reset();
+
+    //                 // Update UI
+    //                 renderMainContent();
+    //                 showToast(`Welcome back, ${userData.name || role.charAt(0).toUpperCase() + role.slice(1)}!`, 'success');
+    //             } else {
+    //                 throw new Error('Invalid institutional credentials');
+    //             }
+    //         } catch (error) {
+    //             showToast(error.message, 'danger');
+    //         } finally {
+    //             submitButton.innerHTML = originalText;
+    //             submitButton.disabled = false;
+    //         }
+    //     }, 1500);
+    // }
+    // In your AttendanceSystem module, update the handleLogin function:
     function handleLogin(e) {
         e.preventDefault();
 
@@ -186,6 +285,13 @@ const AttendanceSystem = (function () {
         const email = document.getElementById('loginEmail').value;
         const password = document.getElementById('loginPassword').value;
         const rememberMe = document.getElementById('rememberMe').checked;
+
+        // Form validation
+        const form = e.target;
+        if (!form.checkValidity()) {
+            form.classList.add('was-validated');
+            return;
+        }
 
         // Show loading state
         const submitButton = e.target.querySelector('button[type="submit"]');
@@ -207,7 +313,7 @@ const AttendanceSystem = (function () {
                 // Check credentials based on login type
                 switch (loginType) {
                     case 'admin':
-                        if (email === 'admin@college.edu' && password === 'Admin@123') {
+                        if (email === 'admin@jntugv.edu.in' && password === 'Admin@123') {
                             isValid = true;
                             role = 'admin';
                             userData = {
@@ -218,7 +324,7 @@ const AttendanceSystem = (function () {
                         }
                         break;
                     case 'teacher':
-                        if (email === 'faculty@college.edu' && password === 'Faculty@123') {
+                        if (email === 'faculty@jntugv.edu.in' && password === 'Faculty@123') {
                             isValid = true;
                             role = 'teacher';
                             userData = {
@@ -233,7 +339,7 @@ const AttendanceSystem = (function () {
                         const student = students.find(s => s.email === email);
                         if (student) {
                             // Compare hashed passwords
-                            if (email === 'student@college.edu' && student.password === simpleHash(password)) {
+                            if (simpleHash(password) === student.password) {
                                 isValid = true;
                                 role = 'student';
                                 userData = {
@@ -242,7 +348,7 @@ const AttendanceSystem = (function () {
                                     studentId: student.id,
                                     name: student.name,
                                     section: student.section,
-                                    rollNumber: student.rollNumber
+                                    rollNumber: student.roll
                                 };
                             }
                         }
@@ -258,10 +364,9 @@ const AttendanceSystem = (function () {
                         localStorage.removeItem('rememberedUser');
                     }
 
-                    // Close modal and reset form
-                    const loginModal = bootstrap.Modal.getInstance(document.getElementById('loginModal'));
-                    loginModal.hide();
-                    e.target.reset();
+                    // Hide login section and show main content
+                    document.getElementById('loginSection').style.display = 'none';
+                    document.getElementById('mainContent').style.display = 'block';
 
                     // Update UI
                     renderMainContent();
@@ -277,6 +382,7 @@ const AttendanceSystem = (function () {
             }
         }, 1500);
     }
+
 
     // Handle logout
     function handleLogout() {
@@ -302,16 +408,153 @@ const AttendanceSystem = (function () {
     // Render logged out view
     function renderLoggedOutView() {
         elements.mainContent.innerHTML = `
-            <div class="jumbotron text-center py-5 animate__animated animate__fadeIn">
-                <h1 class="display-4">Welcome to Attendance System</h1>
-                <p class="lead">A modern solution for managing college attendance</p>
-                <hr class="my-4">
-                <p>Please login to access the system features</p>
-                <button class="btn btn-primary btn-lg animate-hover" data-bs-toggle="modal" data-bs-target="#loginModal">
-                    <i class="fas fa-sign-in-alt"></i> Login
-                </button>
+        <section class="login-section" id="loginSection">
+            <div class="login-container">
+                <!-- Left Side with College Background -->
+                <div class="login-left">
+                    <div class="login-overlay"></div>
+                    <div class="login-content">
+                        <img src="https://jntugv.edu.in/static/media/jntugvcev.b33bb43b07b2037ab043.jpg" alt="College Logo"
+                            class="college-logo">
+                        <h1>JNTUGV Attendance System</h1>
+                        <p>Track, manage and analyze student attendance with precision</p>
+                        <div class="college-features">
+                            <div class="feature">
+                                <i class="fas fa-check-circle"></i>
+                                <span>Real-time attendance tracking</span>
+                            </div>
+                            <div class="feature">
+                                <i class="fas fa-check-circle"></i>
+                                <span>Automated reports</span>
+                            </div>
+                            <div class="feature">
+                                <i class="fas fa-check-circle"></i>
+                                <span>Secure access</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Side with Login Form -->
+                <div class="login-right">
+                    <div class="login-form-container">
+                        <h2>Secure Login</h2>
+                        <p class="login-subtitle">Access your institutional account</p>
+
+                        <!-- Role Selection Cards -->
+                        <div class="role-selection mb-4">
+                            <div class="role-options">
+                                <input type="radio" class="btn-check" name="loginType" id="studentType" value="student"
+                                    autocomplete="off" checked>
+                                <label class="role-option" for="studentType">
+                                    <i class="fas fa-user-graduate"></i>
+                                    <span>Student</span>
+                                </label>
+
+                                <input type="radio" class="btn-check" name="loginType" id="teacherType" value="teacher"
+                                    autocomplete="off">
+                                <label class="role-option" for="teacherType">
+                                    <i class="fas fa-chalkboard-teacher"></i>
+                                    <span>Faculty</span>
+                                </label>
+
+                                <input type="radio" class="btn-check" name="loginType" id="adminType" value="admin"
+                                    autocomplete="off">
+                                <label class="role-option" for="adminType">
+                                    <i class="fas fa-user-shield"></i>
+                                    <span>Admin</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Social Login -->
+                        <div class="social-login">
+                            <button class="social-btn google">
+                                <i class="fab fa-google"></i> Continue with Google
+                            </button>
+                            <button class="social-btn microsoft">
+                                <i class="fab fa-microsoft"></i> Continue with Microsoft
+                            </button>
+                            <button class="social-btn id-card">
+                                <i class="fas fa-id-card"></i> College ID Login
+                            </button>
+                        </div>
+
+                        <div class="divider">
+                            <span>or use institutional credentials</span>
+                        </div>
+
+                        <!-- Login Form -->
+                        <form id="loginForm" novalidate>
+                            <div class="form-group">
+                                <label for="loginEmail">Institutional Email</label>
+                                <div class="input-with-icon">
+                                    <i class="fas fa-envelope"></i>
+                                    <input type="email" id="loginEmail" placeholder="username@jntugv.edu.in"
+                                        pattern="[a-z0-9._%+-]+@jntugv\.edu\.in$"
+                                        title="Please use your institutional email" required>
+                                    <div class="invalid-feedback">Please enter a valid college email</div>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="loginPassword">Password</label>
+                                <div class="input-with-icon">
+                                    <i class="fas fa-lock"></i>
+                                    <input type="password" id="loginPassword" placeholder="Enter your password"
+                                        minlength="8" required>
+                                    <i class="fas fa-eye toggle-password position-eye"></i>
+                                    <div class="invalid-feedback">Password must be at least 8 characters</div>
+                                </div>
+                            </div>
+
+                            <div class="form-options">
+                                <div class="remember-me">
+                                    <input type="checkbox" id="rememberMe">
+                                    <label for="rememberMe">Remember this device</label>
+                                </div>
+                                <a href="#forgot-password" class="forgot-password">Forgot password?</a>
+                            </div>
+
+                            <button type="submit" class="login-btn">
+                                <i class="fas fa-sign-in-alt"></i> Secure Login
+                            </button>
+                        </form>
+
+                        <!-- Help Section -->
+                        <div class="help-section">
+                            <p>Need help accessing your account?</p>
+                            <div class="help-links">
+                                <a href="#contact-support">
+                                    <i class="fas fa-headset"></i> IT Support
+                                </a>
+                                <a href="#faq">
+                                    <i class="fas fa-question-circle"></i> FAQs
+                                </a>
+                                <a href="#contact-admin">
+                                    <i class="fas fa-user-cog"></i> Contact Admin
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
-        `;
+        </section>
+    `;
+
+        // Re-attach event listeners after rendering
+        document.getElementById('loginForm')?.addEventListener('submit', handleLogin);
+
+        // Add password toggle functionality
+        document.querySelectorAll('.toggle-password').forEach(icon => {
+            icon.addEventListener('click', function () {
+                const passwordInput = this.previousElementSibling;
+                const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+                passwordInput.setAttribute('type', type);
+                this.classList.toggle('fa-eye-slash');
+                this.classList.toggle('fa-eye');
+            });
+        });
     }
 
     // Render admin dashboard
@@ -1722,3 +1965,5 @@ mainContent.innerHTML = `
 `;
 
 // ========================================================================================
+
+
