@@ -41,6 +41,7 @@ const AttendanceSystem = (function () {
         document.getElementById('loginForm')?.addEventListener('submit', handleLogin);
         document.getElementById('addStudentForm')?.addEventListener('submit', handleAddStudent);
         document.getElementById('selectDateForm')?.addEventListener('submit', handleSelectDate);
+        document.getElementById('editStudentForm')?.addEventListener('submit', handleEditStudent);
 
         // Single event listener for all click events
         document.addEventListener('click', function (e) {
@@ -143,6 +144,29 @@ const AttendanceSystem = (function () {
             if (e.target.closest('.delete-student')) {
                 const studentId = e.target.closest('.delete-student').dataset.id;
                 deleteStudent(studentId);
+            }
+
+            // Edit student
+            if (e.target.closest('.edit-student')) {
+                const studentId = e.target.closest('.edit-student').dataset.id;
+                showEditStudentModal(studentId);
+            }
+
+            // Reset password
+            if (e.target.closest('.reset-password')) {
+                const studentId = e.target.closest('.reset-password').dataset.id;
+                resetStudentPassword(studentId);
+            }
+        });
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', function (e) {
+            // Escape key closes modals
+            if (e.key === 'Escape') {
+                const modals = document.querySelectorAll('.modal.show');
+                if (modals.length > 0) {
+                    bootstrap.Modal.getInstance(modals[0]).hide();
+                }
             }
         });
     }
@@ -282,7 +306,7 @@ const AttendanceSystem = (function () {
         e.preventDefault();
 
         const loginType = document.querySelector('input[name="loginType"]:checked')?.value;
-        const email = document.getElementById('loginEmail').value;
+        const email = document.getElementById('loginEmail').value.trim();
         const password = document.getElementById('loginPassword').value;
         const rememberMe = document.getElementById('rememberMe').checked;
 
@@ -350,30 +374,44 @@ const AttendanceSystem = (function () {
                                     section: student.section,
                                     rollNumber: student.roll
                                 };
+                            } else {
+                                throw new Error('Incorrect password');
                             }
+                        } else {
+                            throw new Error('Student not found with this email');
                         }
                         break;
+                    default:
+                        throw new Error('Invalid role selected');
                 }
 
-                if (isValid) {
-                    currentUser = userData;
+                if (!isValid && !userData) {
+                    throw new Error('Invalid credentials for selected role');
+                }
 
-                    if (rememberMe) {
-                        localStorage.setItem('rememberedUser', JSON.stringify(currentUser));
-                    } else {
-                        localStorage.removeItem('rememberedUser');
-                    }
+                currentUser = userData;
 
-                    // Hide login section and show main content
-                    document.getElementById('loginSection').style.display = 'none';
-                    document.getElementById('mainContent').style.display = 'block';
-
-                    // Update UI
-                    renderMainContent();
-                    showToast(`Welcome back, ${userData.name || role.charAt(0).toUpperCase() + role.slice(1)}!`, 'success');
+                if (rememberMe) {
+                    localStorage.setItem('rememberedUser', JSON.stringify(currentUser));
                 } else {
-                    throw new Error('Invalid institutional credentials');
+                    localStorage.removeItem('rememberedUser');
                 }
+
+                // Hide login section and show main content
+                document.getElementById('loginSection').style.display = 'none';
+                document.getElementById('mainContent').style.display = 'block';
+
+                // Update UI
+                renderMainContent();
+                showToast(`Welcome back, ${userData.name || role.charAt(0).toUpperCase() + role.slice(1)}!`, 'success');
+
+                // Close modal if exists
+                const loginModal = bootstrap.Modal.getInstance(document.getElementById('loginModal'));
+                if (loginModal) loginModal.hide();
+
+                // Reset form
+                e.target.reset();
+
             } catch (error) {
                 showToast(error.message, 'danger');
             } finally {
@@ -394,15 +432,53 @@ const AttendanceSystem = (function () {
 
     // Render main content based on login state
     function renderMainContent() {
+        // Clear any existing modals
+        elements.modalContainer.innerHTML = '';
+
+        // Check authentication status
         if (!currentUser) {
             renderLoggedOutView();
-        } else if (currentUser.role === 'admin') {
-            renderAdminDashboard();
-        } else if (currentUser.role === 'teacher') {
-            renderTeacherDashboard();
-        } else if (currentUser.role === 'student') {
-            renderStudentDashboard();
+            return;
         }
+
+        // Add loading indicator
+        elements.mainContent.innerHTML = `
+        <div class="d-flex justify-content-center align-items-center" style="height: 300px;">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
+    `;
+
+        // Render appropriate dashboard after a small delay for better UX
+        setTimeout(() => {
+            try {
+                switch (currentUser.role) {
+                    case 'admin':
+                        renderAdminDashboard();
+                        break;
+                    case 'teacher':
+                        renderTeacherDashboard();
+                        break;
+                    case 'student':
+                        renderStudentDashboard();
+                        break;
+                    default:
+                        throw new Error('Invalid user role');
+                }
+
+                // Initialize tooltips for the new content
+                const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+                tooltipTriggerList.map(function (tooltipTriggerEl) {
+                    return new bootstrap.Tooltip(tooltipTriggerEl);
+                });
+
+            } catch (error) {
+                console.error('Dashboard rendering error:', error);
+                showToast('Failed to load dashboard', 'danger');
+                handleLogout();
+            }
+        }, 200);
     }
 
     // Render logged out view
@@ -468,7 +544,7 @@ const AttendanceSystem = (function () {
                         </div>
 
                         <!-- Social Login -->
-                        <div class="social-login">
+                        <!-- <div class="social-login">
                             <button class="social-btn google">
                                 <i class="fab fa-google"></i> Continue with Google
                             </button>
@@ -482,7 +558,7 @@ const AttendanceSystem = (function () {
 
                         <div class="divider">
                             <span>or use institutional credentials</span>
-                        </div>
+                        </div>      -->
 
                         <!-- Login Form -->
                         <form id="loginForm" novalidate>
@@ -705,35 +781,94 @@ const AttendanceSystem = (function () {
         }
 
         return `
-        <div class="table-responsive">
-            <table class="table table-striped table-hover">
-                <thead>
+    <div class="table-responsive">
+        <table class="table table-striped table-hover">
+            <thead>
+                <tr>
+                    <th>Roll No.</th>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Section</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${filteredStudents.map(student => `
                     <tr>
-                        <th>Roll No.</th>
-                        <th>Name</th>
-                        <th>Section</th>
-                        <th>Actions</th>
+                        <td>${student.roll}</td>
+                        <td>${student.name}</td>
+                        <td>${student.email}</td>
+                        <td>${student.section}</td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-primary edit-student me-2" 
+                                    data-id="${student.id}">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="btn btn-sm btn-outline-danger delete-student" 
+                                    data-id="${student.id}">
+                                <i class="fas fa-trash-alt"></i>
+                            </button>
+                        </td>
                     </tr>
-                </thead>
-                <tbody>
-                    ${filteredStudents.map(student => `
-                        <tr>
-                            <td>${student.roll}</td>
-                            <td>${student.name}</td>
-                            <td>${student.section}</td>
-                            <td>
-                                <button class="btn btn-sm btn-outline-danger delete-student" 
-                                        data-id="${student.id}" title="Delete Student">
-                                    <i class="fas fa-trash-alt"></i>
-                                </button>
-                            </td>
-                        </tr>
-                    `).join('')}
-                </tbody>
-            </table>
-        </div>
+                `).join('')}
+            </tbody>
+        </table>
+    </div>
     `;
     }
+
+
+    // Add new student
+    function handleAddStudent(e) {
+        e.preventDefault();
+
+        const name = document.getElementById('studentName').value.trim();
+        const roll = document.getElementById('studentRoll').value.trim();
+        const section = document.getElementById('studentSection').value;
+        const email = `${roll.toLowerCase()}@college.edu`;
+        const password = simpleHash(roll); // Default password is roll number
+
+        // Validate
+        if (!name || !roll || !section) {
+            showToast('Please fill all fields', 'warning');
+            return;
+        }
+
+        if (students.some(s => s.roll === roll)) {
+            showToast('Student with this roll number already exists', 'danger');
+            return;
+        }
+
+        const newStudent = {
+            id: Date.now().toString(),
+            name,
+            roll,
+            section,
+            email,
+            password
+        };
+
+        students.push(newStudent);
+        saveStudents();
+        showToast('Student added successfully', 'success');
+        renderAdminDashboard(); // Refresh view
+    }
+
+    // Delete student
+    function deleteStudent(studentId) {
+        if (confirm('Are you sure you want to delete this student?')) {
+            students = students.filter(s => s.id !== studentId);
+            saveStudents();
+            renderAdminDashboard();
+            showToast('Student deleted successfully', 'success');
+        }
+    }
+
+    // Save students to localStorage
+    function saveStudents() {
+        localStorage.setItem('students', JSON.stringify(students));
+    }
+
 
     // Delete student function
     function deleteStudent(studentId) {
@@ -917,6 +1052,8 @@ const AttendanceSystem = (function () {
             </div>
         `;
     }
+
+    
 
     // Render recent attendance
     // Render recent attendance
@@ -1784,7 +1921,6 @@ const AttendanceSystem = (function () {
     `;
     }
 
-
     // Delete student
     function deleteStudent(studentId) {
         const confirmDelete = confirm('Are you sure you want to delete this student?');
@@ -1795,6 +1931,9 @@ const AttendanceSystem = (function () {
             showToast('Student deleted successfully', 'success');
         }
     }
+
+
+
 
     // Public API
     return {

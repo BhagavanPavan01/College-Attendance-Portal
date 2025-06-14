@@ -1283,6 +1283,8 @@ body.dark-theme .toggle-btn {
     justify-content: center;
 }
 
+
+
 .login-overlay {
     position: absolute;
     top: 0;
@@ -1487,6 +1489,7 @@ body.dark-theme .toggle-btn {
     transform: translateY(-50%);
     cursor: pointer;
     color: #7f8c8d;
+    margin-left: 320px;
 }
 
 .form-options {
